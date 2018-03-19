@@ -136,6 +136,7 @@ setup(
             'femb_lock=femb_python.helper_scripts.locking:lock',
 
             'data_query=femb_python.summary_scripts.check_data:main',
+            'error_query=femb_python.summary_scripts.find_errs:main',
 
             'femb_power_supply=femb_python.helper_scripts.test_instruments:powersupply',
             'femb_function_generator=femb_python.helper_scripts.test_instruments:funcgen',
@@ -201,12 +202,19 @@ setup(
             'quadadc_prod_initSetup=femb_python.test_measurements.quadAdcTester.code.doQuadAdcTest_initializeSetup:main',
             'quadadc_prod_shutdownSetup=femb_python.test_measurements.quadAdcTester.code.doQuadAdcTest_shutdownSetup:main',
             'quadadc_trace_window=femb_python.test_measurements.quadAdcTester.code.doQuadAdcTest_allchan_window:main',
+            'quadadc_test_summary=femb_python.test_measurements.quadAdcTester.code.quadadc_test_summary:main',
+            
+            #quad FE ASIC production test
+            'quadfe_prod_test=femb_python.test_measurements.quadFeTestCold.run_main_cp:main',
 
-            # what the shifters run:
+            #ADC ASIC - single socket clock testing
+            'adc_clk_optimize=femb_python.test.test_measurements.adc_clockk_test.run:main',
+
+            #what the shifters run:
             'femb_osctest=femb_python.test_measurements.OscillatorTesting.otmain:main',
-            # the main tester
+            #the main tester
             'femb_test_osc=femb_python.test_measurements.OscillatorTesting.code.testOscillator:main',
-            # generate summary of the N tests run by the above
+            #generate summary of the N tests run by the above
             'femb_test_osc_summary=femb_python.test_measurements.OscillatorTesting.code.testOscillatorSummary:main',
 
             #For flash testing
