@@ -208,7 +208,7 @@ setup(
             'quadfe_prod_test=femb_python.test_measurements.quadFeTestCold.run_main_cp:main',
 
             #ADC ASIC - single socket clock testing
-            'adc_clk_optimize=femb_python.test.test_measurements.adc_clockk_test.run:main',
+            'adc_clk_optimize=femb_python.test_measurements.adc_clock_test.run:main',
 
             #what the shifters run:
             'femb_osctest=femb_python.test_measurements.OscillatorTesting.otmain:main',

@@ -27,8 +27,8 @@ import subprocess
 import femb_python
 from femb_python.configuration import CONFIG
 from femb_python.configuration.argument_parser import ArgumentParser
-from femb_python.test_measurements.adc_clock_test.run import main as maintest #bing
-from ...runpolicy import DirectRunner, SumatraRunner
+#from femb_python.test_measurements.adc_clock_test.run import main as maintest #bing
+from femb_python.runpolicy import DirectRunner, SumatraRunner
 
 GUITESTMODE=False
 
@@ -268,7 +268,7 @@ class GUI_WINDOW(Frame):
                                 "argstr": "-j {paramfile}",
                                 "basedir": self.data_base_dir,
                                 "rundir": "/home/{linux_username}/run",
-                                "datadir": "{basedir}/{linux_username}/adcasic/{femb_config_name}/{timestamp}",
+                                "datadir": "{basedir}/{linux_username}/adcClockTest/{femb_config_name}/{timestamp}",
                                 "outfilename": "{datadir}/adcSetup_{timestamp}.json",
                                 "paramfile": "{datadir}/setup_params.json",
                                 "smtname": "adc",
@@ -555,16 +555,20 @@ class GUI_WINDOW(Frame):
         self.master.destroy()
 
 def main():
-    from ...configuration.argument_parser import ArgumentParser
-
+    from femb_python.configuration.argument_parser import ArgumentParser
+    print("yayaya")
     parser = ArgumentParser(description="ADC test GUI")
-    parser.add_argument("-q","--forceQuick",help="Force to run only the ADC offset current off setting (normally runs all when warm)",action="store_true")
-    parser.add_argument("-l","--forceLong",help="Force to run over all ADC offset current settings (normally doesn't when cold)",action="store_true")
+    #parser.add_argument("-q","--forceQuick",help="Force to run only the ADC offset current off setting (normally runs all when warm)",action="store_true")
+    #parser.add_argument("-l","--forceLong",help="Force to run over all ADC offset current settings (normally doesn't when cold)",action="store_true")
     args = parser.parse_args()
 
     print("Using femb_python:",os.path.dirname(femb_python.__file__))
 
     root = Tk()
     root.title("ADC Test GUI")
-    window = GUI_WINDOW(root,forceLong=args.forceLong,forceQuick=args.forceQuick)
+    window = GUI_WINDOW(root)
     root.mainloop() 
+
+if __name__ == '__main__':
+    main()
+
