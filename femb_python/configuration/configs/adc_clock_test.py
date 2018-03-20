@@ -2,19 +2,17 @@
 
 import sys 
 import time
-#import visa
-#from visa import VisaIOError
-#from femb_python.test_measurements.adc_clock_test.scripts.femb_udp_cmdline import FEMB_UDP
+from femb_python.configuration.config_base import FEMB_CONFIG_BASE
 from femb_python.femb_udp import FEMB_UDP
-from femb_python.test_measurements.adc_clock_test.adc_asic_reg_mapping import ADC_ASIC_REG_MAPPING
-from femb_python.test_measurements.adc_clock_test.user_settings import user_editable_settings
+from femb_python.test_measurements.adc_clock_test.code.adc_asic_reg_mapping import ADC_ASIC_REG_MAPPING
+from femb_python.test_measurements.adc_clock_test.code.user_settings import user_editable_settings
 settings = user_editable_settings()
 
 
 from femb_python.test_instrument_interface.keysight_33600A import Keysight_33600A
 from femb_python.test_instrument_interface.rigol_dp800 import RigolDP800
 
-class FEMB_CONFIG:
+class FEMB_CONFIG(FEMB_CONFIG_BASE):
 
     def __init__(self,exitOnError=True):
         super().__init__(exitOnError=exitOnError)
@@ -79,7 +77,7 @@ class FEMB_CONFIG:
         self.CLKDEFAULT = "fifo"
 
         ## Firmware update related variables
-        self.FIRMWAREPATH2MHZ = "/Documents/femb_python/femb_python/test_measurements/adc_clock_test/S_SKT_ADC_CHP_TST.sof"
+        self.FIRMWAREPATH2MHZ = "/home/oper/Documents/CarlosForkedRepo/femb_python/femb_python/test_measurements/adc_clock_test/code/S_SKT_ADC_CHP_TST.sof"
         #self.FIRMWAREPATH1MHZ = "/opt/sw/releases/femb_firmware-0.1.0/adc_tester/S7_1M_SBND_FPGA.sof"
         self.FIRMWAREPROGEXE = "/opt/sw/intelFPGA/17.0/qprogrammer/bin/quartus_pgm"
         #self.FIRMWAREPROGCABLE = "USB-Blaster"
