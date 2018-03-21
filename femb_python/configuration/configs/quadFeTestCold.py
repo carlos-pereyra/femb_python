@@ -6,7 +6,8 @@ import time
 #from visa import VisaIOError
 import matplotlib.pyplot as plt
 import numpy as np
-from femb_python.test_measurements.quadFeTestCold.scripts.femb_udp_cmdline import FEMB_UDP
+#from femb_python.test_measurements.quadFeTestCold.scripts.femb_udp_cmdline import FEMB_UDP
+from femb_python.femb_udp import FEMB_UDP
 from femb_python.test_measurements.quadFeTestCold.scripts.detect_peaks import detect_peaks
 from femb_python.test_measurements.quadFeTestCold.scripts.fe_asic_reg_mapping import FE_ASIC_REG_MAPPING
 from femb_python.test_measurements.quadFeTestCold.user_settings import user_editable_settings
@@ -16,6 +17,8 @@ settings = user_editable_settings()
 class FEMB_CONFIG:
 
     def __init__(self):
+        self.NASICS = 4
+
         #declare board specific registers
         self.REG_RESET = 0
         self.REG_FEASIC_SPI = 5
@@ -28,8 +31,27 @@ class FEMB_CONFIG:
         self.REG_TEST_PULSE_DLY = 80
         self.REG_TEST_PULSE_AMPL = 0 % 32
         self.REG_EN_CALI = 16
-        self.plot = plot_functions()
-        
+
+        self.REG_RESET = 0
+        self.REG_DAC_VALUE = 1
+        self.REG_SET_DAC = 2
+        self.REG_START = 3
+        self.REG_SEL_ASIC = 4
+        self.REG_SEL_CH = 4
+        self.REG_ASIC_RESET = 5
+        self.REG_ASIC_SPIPROG = 5
+        self.REG_SAMPLE_STOP = 6
+        self.REG_TP_PERIOD_P = 7
+        self.REG_TP_PERIOD_N = 7
+        self.REG_TP_MODE = 9
+        self.REG_TST_SW = 12
+        self.REG_LED_CNTL = 13
+        self.REG_FESPI_BASE = 20
+        self.REG_FRAME_SIZE = 40
+        self.REG_DAC_ADC_EN = 60
+        self.REG_TST_SW = 12
+
+        self.plot = plot_functions()        
         self.comm_settings = None
 
         #initialize FEMB UDP object
@@ -56,7 +78,8 @@ class FEMB_CONFIG:
         
         #Tells the FPGA to turn on the ASICs
         self.femb.write_reg(12, 0x0)
-        
+        #self.turnOnAsics() #added
+
         #Tells the FPGA to turn off each DAC
         self.femb.write_reg(61, 0xF)
 
@@ -98,7 +121,7 @@ class FEMB_CONFIG:
         #Write the defaul ASIC settings
         self.fe_reg.set_fe_board(sts=1, snc=1, sg=1, st=1, smn=0, sbf=1, 
                        slk = 0, stb = 0, s16=0, slkh=0, sdc=0, sdacsw2=1, sdacsw1=0, sdac=settings.sync_peak_height)
-
+        print("FEMB_CONFIG --> FE ASIC SPI")
         self.configFeAsic()
         
         print ("FEMB_CONFIG--> Initialize FEMB is DONE")
