@@ -46,10 +46,10 @@ class main_class(object):
 
         folder_path = [[],[],[],[]]
         chip_name = []
-        chip_name.append(params["box_id_1"])
-        chip_name.append(params["box_id_2"])
-        chip_name.append(params["box_id_3"])
-        chip_name.append(params["box_id_4"])
+        chip_name.append(params["asic0id"])
+        chip_name.append(params["asic1id"])
+        chip_name.append(params["asic2id"])
+        chip_name.append(params["asic3id"])
 
         i = 0
         for i in range(0,4):
