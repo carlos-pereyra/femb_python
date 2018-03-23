@@ -25,8 +25,8 @@ import subprocess
 
 #import the test module
 import femb_python
-from ...configuration import CONFIG
-from ...runpolicy import DirectRunner, SumatraRunner
+from femb_python.configuration import CONFIG
+from femb_python.runpolicy import DirectRunner, SumatraRunner
 
 GUITESTMODE=False
 
@@ -266,7 +266,7 @@ class GUI_WINDOW(Frame):
                                 "argstr": "-j {paramfile}",
                                 "basedir": self.data_base_dir,
                                 "rundir": "/home/{linux_username}/run",
-                                "datadir": "{basedir}/{linux_username}/adcasic/{femb_config_name}/{timestamp}",
+                                "datadir": "{basedir}/{linux_username}/adcasic_A01/{femb_config_name}/{timestamp}",
                                 "outfilename": "{datadir}/adcSetup_{timestamp}.json",
                                 "paramfile": "{datadir}/setup_params.json",
                                 "smtname": "adc",
@@ -312,7 +312,7 @@ class GUI_WINDOW(Frame):
                                 "argstr": "-j {paramfile}",
                                 "basedir": self.data_base_dir,
                                 "rundir": "/home/{linux_username}/run",
-                                "datadir": "{basedir}/{linux_username}/adcasic/{femb_config_name}/{timestamp}",
+                                "datadir": "{basedir}/{linux_username}/adcasic_A01/{femb_config_name}/{timestamp}",
                                 "paramfile": "{datadir}/params.json",
                                 "smtname": "adc",
                                 "smttag": "{hostname}",
@@ -553,7 +553,7 @@ class GUI_WINDOW(Frame):
         self.master.destroy()
 
 def main():
-    from ...configuration.argument_parser import ArgumentParser
+    from femb_python.configuration.argument_parser import ArgumentParser
 
     parser = ArgumentParser(description="ADC test GUI")
     parser.add_argument("-q","--forceQuick",help="Force to run only the ADC offset current off setting (normally runs all when warm)",action="store_true")
@@ -566,3 +566,7 @@ def main():
     root.title("ADC Test GUI")
     window = GUI_WINDOW(root,forceLong=args.forceLong,forceQuick=args.forceQuick)
     root.mainloop() 
+
+if __name__ == '__main__':
+    main()
+

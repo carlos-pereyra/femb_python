@@ -25,6 +25,8 @@ import subprocess
 from femb_python.femb_udp import FEMB_UDP
 from femb_python.configuration.config_base import FEMB_CONFIG_BASE, FEMBConfigError, SyncADCError, InitBoardError, ConfigADCError, ReadRegError
 from femb_python.configuration.adc_asic_reg_mapping_P1 import ADC_ASIC_REG_MAPPING
+#from femb_python.test_measurements.adc_clk_tst.adc_asic_reg_mapping import ADC_ASIC_REG_MAPPING
+
 from femb_python.test_instrument_interface.keysight_33600A import Keysight_33600A
 from femb_python.test_instrument_interface.rigol_dp800 import RigolDP800
 
@@ -33,7 +35,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
     def __init__(self,exitOnError=True):
         super().__init__(exitOnError=exitOnError)
         #declare board specific registers
-        self.FEMB_VER = "adctestP1single"
+        self.FEMB_VER = "adctestP1single_clkTest"
         self.REG_RESET = 0                  # checked (good)
         self.REG_ASIC_RESET = 1             # checked (good)
         self.REG_ASIC_SPIPROG = 2           # checked (good)
@@ -106,13 +108,13 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         ##################################
 
         self.NASICS = 1
-        self.FUNCGENINTER = Keysight_33600A("/dev/usbtmc1",1)
-        self.POWERSUPPLYINTER = RigolDP800("/dev/usbtmc0",["CH2","CH3","CH1"]) # turn on CH2 first
+        self.FUNCGENINTER = Keysight_33600A("/dev/usbtmc0",1)
+        self.POWERSUPPLYINTER = RigolDP800("/dev/usbtmc1",["CH2","CH3","CH1"]) # turn on CH2 first
         self.F2DEFAULT = 0
         self.CLKDEFAULT = "fifo"
 
         ## Firmware update related variables
-        self.FIRMWAREPATH2MHZ = "/home/oper/Documents/CarlosForkedRepo/femb_python/femb_python/test_measurements/adc_clock_test/code/S_SKT_ADC_CHP_TST.sof"
+        self.FIRMWAREPATH2MHZ = "/home/oper/Documents/CarlosForkedRepo/femb_python/femb_python/test_measurements/adc_clk_tst/S_SKT_ADC_CHP_TST.sof"
         #self.FIRMWAREPATH1MHZ = "/opt/sw/releases/femb_firmware-0.1.0/adc_tester/S7_1M_SBND_FPGA.sof"
         self.FIRMWAREPROGEXE = "/opt/sw/intelFPGA/17.0/qprogrammer/bin/quartus_pgm"
         #self.FIRMWAREPROGCABLE = "USB-Blaster"
@@ -163,34 +165,34 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
 
             #Set ADC latch_loc and clock phase
             latchloc1 = None
-            latchloc5 = None
+            #latchloc5 = None
             clockphase = None
             if self.SAMPLERATE == 1e6:
                 if self.COLD:
                     print("Using 1 MHz cold latchloc/clockphase")
                     latchloc1 = self.REG_LATCHLOC1_4_data_1MHz_cold
-                    latchloc5 = self.REG_LATCHLOC5_8_data_1MHz_cold
+                    #latchloc5 = self.REG_LATCHLOC5_8_data_1MHz_cold
                     clockphase = self.REG_CLKPHASE_data_1MHz_cold
                 else:
                     print("Using 1 MHz warm latchloc/clockphase")
-                    latchloc1 = self.REG_LATCHLOC1_4_data_1MHz
-                    latchloc5 = self.REG_LATCHLOC5_8_data_1MHz
-                    clockphase = self.REG_CLKPHASE_data_1MHz
+                    latchloc1 = self.REG_LATCHLOC1_4_data_1MHz_warm
+                    #latchloc5 = self.REG_LATCHLOC5_8_data_1MHz_warm
+                    clockphase = self.REG_CLKPHASE_data_1MHz_warm
             else: # use 2 MHz values
                 if self.COLD:
                     print("Using 2 MHz cold latchloc/clockphase")
                     latchloc1 =  self.REG_LATCHLOC1_4_data_cold
-                    latchloc5 =  self.REG_LATCHLOC5_8_data_cold
+                    #latchloc5 =  self.REG_LATCHLOC5_8_data_cold
                     clockphase =  self.REG_CLKPHASE_data_cold
                 else:
                     print("Using 2 MHz warm latchloc/clockphase")
-                    latchloc1 = self.REG_LATCHLOC1_4_data
-                    latchloc5 = self.REG_LATCHLOC5_8_data
-                    clockphase = self.REG_CLKPHASE_data
+                    latchloc1 = self.REG_LATCHLOC1_4_data_warm
+                    #latchloc5 = self.REG_LATCHLOC5_8_data_warm
+                    clockphase = self.REG_CLKPHASE_data_warm
 
-            print("Initializing with Latch Loc: {:#010x} {:#010x} Clock Phase: {:#010x}".format(latchloc1,latchloc5,clockphase))
+            print("Initializing with Latch Loc: {:#010x} Clock Phase: {:#010x}".format(latchloc1,clockphase)) #,latchloc5
             self.femb.write_reg( self.REG_LATCHLOC1_4, latchloc1)
-            self.femb.write_reg( self.REG_LATCHLOC5_8, latchloc5)
+            #self.femb.write_reg( self.REG_LATCHLOC5_8, latchloc5)
             for iTry in range(5):
                 self.femb.write_reg( self.REG_CLKPHASE, ~clockphase)
                 time.sleep(0.05)
@@ -212,7 +214,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
             """
             self.femb.write_reg( self.REG_HS, 0x0) # 0 readout all 15 channels, 1 readout only selected one
             """
-            self.femb.write_reg( self.REG_SEL_CH, 0x0000) #11-8 = channel select, 3-0 = ASIC select
+            self.femb.write_reg(self.REG_SEL_CH, 0x0000) #11-8 = channel select, 3-0 = ASIC select
 
             #Set number events per header
             self.femb.write_reg( 8, 0x0)
@@ -380,11 +382,14 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
             offset_idl2=self.EC_IDL2_OFF, offset_idl1=self.EC_IDL1_OFF,
             width_rst=self.EC_RST_WID, width_read=self.EC_RD_WID,
             width_idxm=self.EC_IDXM_WID, width_idxl=self.EC_IDXL_WID, 
-            width_idl2=self.EC_IDL2_WID, width_idl1=self.EC_IDL1_WID,) #updated to configure clock settings for A01 firmware
+            width_idl2=self.EC_IDL2_WID, width_idl1=self.EC_IDL1_WID,
+            pll0=self.EC_PLL_STEP0,
+            pll1=self.EC_PLL_STEP1,
+            pll2=self.EC_PLL_STEP2) #updated to configure clock settings for A01 firmware
         else:
             self.extClock(enable=False)
 
-        self.adc_reg.set_sbnd_board(en_gr=enableOffsetCurrent,d=offsetCurrent,tstin=testInput,frqc=freqInternal,slp=sleep,pdsr=pdsr,pcsr=pcsr,clk0=clk0,clk1=clk1,f0=f0,f1=f1,f2=f2,f3=f3,f4=f4,f5=f5,slsb=sLSB)
+        #self.adc_reg.set_sbnd_board(en_gr=enableOffsetCurrent,d=offsetCurrent,tstin=testInput,frqc=freqInternal,slp=sleep,pdsr=pdsr,pcsr=pcsr,clk0=clk0,clk1=clk1,f0=f0,f1=f1,f2=f2,f3=f3,f4=f4,f5=f5,slsb=sLSB)
         self.configAdcAsic_regs(self.adc_reg.REGS)
 
     def selectChannel(self,asic,chan,hsmode=1,singlechannelmode=None):
@@ -428,7 +433,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
                 print("FEMB_CONFIG--> ADC not synced, try to fix")
                 self.fixUnsync(a)
         latchloc1_4 = self.femb.read_reg ( self.REG_LATCHLOC1_4 ) 
-        latchloc5_8 = self.femb.read_reg ( self.REG_LATCHLOC5_8 )
+        #latchloc5_8 = self.femb.read_reg ( self.REG_LATCHLOC5_8 )
         clkphase    = self.femb.read_reg ( self.REG_CLKPHASE )
         if self.SAMPLERATE == 1e6:
             if self.COLD:
@@ -448,12 +453,12 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
                 self.REG_LATCHLOC1_4_data_warm = latchloc1_4
                 #self.REG_LATCHLOC5_8_data_warm = latchloc5_8 #no reg
                 self.REG_CLKPHASE_data_warm    = clkphase
-        print("FEMB_CONFIG--> Latch latency {:#010x} {:#010x} Phase: {:#010x}".format
-             (latchloc1_4, latchloc5_8, clkphase))
+        print("FEMB_CONFIG--> Latch latency {:#010x} Phase: {:#010x}".format
+             (latchloc1_4, clkphase))
         self.femb.write_reg ( 3, (reg3&0x7fffffff) )
         self.femb.write_reg ( 3, (reg3&0x7fffffff) )
         print("FEMB_CONFIG--> End sync ADC")
-        return not alreadySynced,latchloc1_4,latchloc5_8 ,clkphase
+        return not alreadySynced,latchloc1_4,clkphase #,latchloc5_8 
 
     def testUnsync(self, adc, npackets=10):
         print("Starting testUnsync adc: ",adc)
@@ -526,7 +531,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
                 return
 
         initLATCH1_4 = self.femb.read_reg ( self.REG_LATCHLOC1_4 )
-        initLATCH5_8 = self.femb.read_reg ( self.REG_LATCHLOC5_8 )
+        #initLATCH5_8 = self.femb.read_reg ( self.REG_LATCHLOC5_8 )
         initPHASE = self.femb.read_reg ( self.REG_CLKPHASE )
 
         phases = [0,1]
@@ -541,8 +546,8 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
                 self.femb.write_reg ( self.REG_LATCHLOC1_4, testShift )
                 time.sleep(0.01)
             else:
-                testShift = ( (initLATCH5_8 & ~(shiftMask)) | (shift << 8*adcNum) )
-                self.femb.write_reg ( self.REG_LATCHLOC5_8, testShift )
+                #testShift = ( (initLATCH5_8 & ~(shiftMask)) | (shift << 8*adcNum) )
+                #self.femb.write_reg ( self.REG_LATCHLOC5_8, testShift )
                 time.sleep(0.01)
             for phase in phases:
                 clkMask = (0x1 << adcNum)
@@ -565,9 +570,9 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
                     return
         #if program reaches here, sync has failed
         print("Error: FEMB_CONFIG--> ADC SYNC process failed for ADC # " + str(adc))
-        print("Setting back to original values: LATCHLOC1_4: {:#010x}, LATCHLOC5_8: {:#010x}, PHASE: {:#010x}".format,initLATCH1_4,initLATCH5_8,initPHASE)
+        #print("Setting back to original values: LATCHLOC1_4: {:#010x}, LATCHLOC5_8: {:#010x}, PHASE: {:#010x}".format,initLATCH1_4,initLATCH5_8,initPHASE)
         self.femb.write_reg ( self.REG_LATCHLOC1_4, initLATCH1_4 )
-        self.femb.write_reg ( self.REG_LATCHLOC5_8, initLATCH5_8 )
+        #self.femb.write_reg ( self.REG_LATCHLOC5_8, initLATCH5_8 )
         self.femb.write_reg ( self.REG_CLKPHASE, initPHASE )
         if self.exitOnError:
             sys.exit(1)
@@ -620,7 +625,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
             rst_wid = width_rst // denominator
 
             rd_off = offset_read // denominator
-            rd_wid = with_read // denominator
+            rd_wid = width_read // denominator
 
             idxm_off = offset_idxm // denominator
             idxm_wid = width_idxm  // denominator
@@ -718,15 +723,15 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
 
     def getClockStr(self):
         latchloc1 = self.femb.read_reg(self.REG_LATCHLOC1_4)
-        latchloc5 = self.femb.read_reg(self.REG_LATCHLOC5_8)
+        #latchloc5 = self.femb.read_reg(self.REG_LATCHLOC5_8)
         clkphase = self.femb.read_reg(self.REG_CLKPHASE)
         if latchloc1 is None:
             return "Register Read Error"
-        if latchloc5 is None:
-            return "Register Read Error"
+        #if latchloc5 is None:
+        #    return "Register Read Error"
         if clkphase is None:
             return "Register Read Error"
-        return "Latch Loc: {:#010x} {:#010x} Clock Phase: {:#010x}".format(latchloc1,latchloc5,clkphase)
+        return "Latch Loc: {:#010x} Clock Phase: {:#010x}".format(latchloc1,clkphase) #,latchloc5
 
     def getSyncStatus(self):
         return [None],[True],None
