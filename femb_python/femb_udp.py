@@ -24,6 +24,24 @@ class FEMB_UDP(object):
     This is the UDB interface to the femb
     """
 
+    #__INIT__#
+    def __init__(self):
+        self.UDP_IP = "192.168.121.1"
+        self.KEY1 = 0xDEAD
+        self.KEY2 = 0xBEEF
+        self.FOOTER = 0xFFFF
+        self.UDP_PORT_WREG = 32000
+        self.UDP_PORT_RREG = 32001
+        self.UDP_PORT_RREGRESP = 32002
+        self.UDP_PORT_HSDATA = 32003
+        self.MAX_REG_NUM = 0xFFFF
+        self.MAX_REG_VAL = 0xFFFFFFFF
+        self.MAX_NUM_PACKETS = 20000
+        self.MAX_PACKET_SIZE = 1024
+        self.REG_SLEEP = 0.001
+        self.MAX_ATTEMPTS = 5
+        self.doReadBack = False
+
     def write_reg(self, reg , data , writeAttempt=0):
         try:
             regVal = int(reg)
@@ -262,20 +280,3 @@ class FEMB_UDP(object):
         data = self.get_data_samples(rawdata)
         return data 
 
-    #__INIT__#
-    def __init__(self):
-        self.UDP_IP = "192.168.121.1"
-        self.KEY1 = 0xDEAD
-        self.KEY2 = 0xBEEF
-        self.FOOTER = 0xFFFF
-        self.UDP_PORT_WREG = 32000
-        self.UDP_PORT_RREG = 32001
-        self.UDP_PORT_RREGRESP = 32002
-        self.UDP_PORT_HSDATA = 32003
-        self.MAX_REG_NUM = 0xFFFF
-        self.MAX_REG_VAL = 0xFFFFFFFF
-        self.MAX_NUM_PACKETS = 20000
-        self.MAX_PACKET_SIZE = 1024
-        self.REG_SLEEP = 0.001
-        self.MAX_ATTEMPTS = 5
-        self.doReadBack = False

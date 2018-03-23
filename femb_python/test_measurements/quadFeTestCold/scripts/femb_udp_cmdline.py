@@ -10,6 +10,26 @@ settings = user_editable_settings()
 
 class FEMB_UDP:
     
+    #__INIT__#
+    def __init__(self):
+
+        #Standard keys to include in data transmission
+        self.KEY1 = 0xDEAD
+        self.KEY2 = 0xBEEF
+        self.FOOTER = 0xFFFF
+        
+        #The relevant ports for reading and writing to each board
+        self.PORT_WREG = 32000
+        self.PORT_RREG = 32001
+        self.PORT_RREGRESP = 32002
+        self.PORT_HSDATA = 32003
+        
+        #Just some limits to check against
+        self.MAX_REG_NUM = 667
+        self.MAX_REG_VAL = 0xFFFFFFFF
+        self.MAX_NUM_PACKETS = 100000
+        self.BUFFER_SIZE = 9014
+
     #Sends a full 32 bit register to either FPGA
     def write_reg(self, reg, data):
         
@@ -331,22 +351,3 @@ class FEMB_UDP:
 
         sock_write.close()
 
-    #__INIT__#
-    def __init__(self):
-
-        #Standard keys to include in data transmission
-        self.KEY1 = 0xDEAD
-        self.KEY2 = 0xBEEF
-        self.FOOTER = 0xFFFF
-        
-        #The relevant ports for reading and writing to each board
-        self.PORT_WREG = 32000
-        self.PORT_RREG = 32001
-        self.PORT_RREGRESP = 32002
-        self.PORT_HSDATA = 32003
-        
-        #Just some limits to check against
-        self.MAX_REG_NUM = 667
-        self.MAX_REG_VAL = 0xFFFFFFFF
-        self.MAX_NUM_PACKETS = 100000
-        self.BUFFER_SIZE = 9014

@@ -30,7 +30,7 @@ from femb_python import runpolicy
 class GUI_WINDOW(Frame):
 
     # defaults
-    use_sumatra = True
+    use_sumatra = False #debugging
     datadisks = ["/dsk/1", "/dsk/2"]
     femb_config = "quadFeAsic"               # aka FEMB_CONFIG env var
 
@@ -228,6 +228,9 @@ class GUI_WINDOW(Frame):
         #record_data_button = Button(self, text="Record Data", command=self.record_data,width=25)
         #record_data_button.grid(row=2,column=columnbase,columnspan=25)
 
+        self.quad_test_result = Label(self, text="CHECK SETUP - NOT STARTED",width=50)
+        self.quad_test_result.grid(sticky=W,row=3,column=columnbase,columnspan=50)
+
         self.check_setup_result = Label(self, text="CHECK SETUP - NOT STARTED",width=50)
         self.check_setup_result.grid(sticky=W,row=3,column=columnbase,columnspan=50)
 
@@ -281,13 +284,13 @@ class GUI_WINDOW(Frame):
         self.params['asic2id'] = self.asic2_entry.get()
         self.params['asic3id'] = self.asic3_entry.get()
         print("""\
-Operator Name: {operator_name}
-Test Stand # : {test_stand}
-Test Board ID: {boardid}
-ASIC 0 ID: {asic0id}
-ASIC 1 ID: {asic1id}
-ASIC 2 ID: {asic2id}
-ASIC 3 ID: {asic3id}
+              Operator Name: {operator_name}
+              Test Stand # : {test_stand}
+              Test Board ID: {boardid}
+              ASIC 0 ID: {asic0id}
+              ASIC 1 ID: {asic1id}
+              ASIC 2 ID: {asic2id}
+              ASIC 3 ID: {asic3id}
         """.format(**self.params))
 
         if (not self.params['power_ready']==1):
@@ -307,11 +310,12 @@ ASIC 3 ID: {asic3id}
         self.load_button_result["text"] = "Testing - do not remove"
         self.update_idletasks()
 
-        for method in ["check_setup",
-                       "gain_enc_sequence",
-                       "gain_enc_sequence_fpgadac",
-                       "gain_enc_sequence_externaldac",
-                       "gain_enc_sequence_check_configs"]:
+        for method in ["quad_test"]:
+                      # "check_setup",
+                      # "gain_enc_sequence",
+                      # "gain_enc_sequence_fpgadac",
+                      # "gain_enc_sequence_externaldac",
+                      # "gain_enc_sequence_check_configs"]:
             LOUD = method.replace("_"," ").upper()
             methname = "do_" + method
             meth = getattr(self, methname)
@@ -364,7 +368,7 @@ ASIC 3 ID: {asic3id}
 
     def load_asics(self):
         #Power down all 4 chips:
-        self.runner(datasubdir="power",executable="quadControlPower", argstr="OFF") #power asic off
+        self.runner(datasubdir="power",executable="quad_Fe_Power", argstr="OFF") #power asic off
         self.load_button_result["text"] = "Ok to load new ASICs"
         self.update_idletasks()
         self.params['power_ready'] = 1
@@ -386,6 +390,7 @@ ASIC 3 ID: {asic3id}
         
         self.load_button_result["text"] = "Press Load ASICs before loading"
         self.start_button_result["text"] = "NOT STARTED"
+        self.quad_test_result["text"] = "QUAD TEST - NOT STARTED"
         self.check_setup_result["text"] = "CHECK SETUP - NOT STARTED"
         self.gain_enc_sequence_result["text"] = "GAIN+ENC ALL SETTINGS - NOT STARTED"
         self.gain_enc_sequence_fpgadac_result["text"] = "GAIN+ENC FPGA DAC SUBSET OF SETTINGS - NOT STARTED"
@@ -414,7 +419,19 @@ ASIC 3 ID: {asic3id}
         #else:
         #    self.check_setup_result["text"] = "SUCCESS"
 
-    
+    def do_quad_test(self):
+        '''
+        Run simple quad test.
+        '''
+        print("Quad Test Yo")
+        self.quad_test_result["text"] = "QUAD TEST - IN PROGRESS SHH"
+        self.update_idletasks()
+        self.test_result = 0
+        self.runner(**self.params, datasubdir="quad_test",
+                    executable="quad_Fe_Prod_Test",
+                    argstr="{paramfile}") #paramfile passes no arguments
+     #self.params holds datadir
+ 
     def do_check_setup(self):
         '''
         Run simple sanity check sequence.
@@ -425,7 +442,7 @@ ASIC 3 ID: {asic3id}
         self.test_result = 0
         self.runner(**self.params, datasubdir="check_setup",
                     executable="femb_feasic_simple",
-                    argstr="{paramfile}")
+                    argstr="{paramfile}") #paramfile passes no arguments
 
 
     def generic_sequence_handler(self, **params):
@@ -562,4 +579,5 @@ def main():
     root.mainloop() 
 
 if __name__ == '__main__':
-main()
+    main()
+
