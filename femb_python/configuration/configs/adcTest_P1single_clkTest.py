@@ -42,24 +42,24 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         self.REG_ADCSPI_BASE = 0x200        # 512 in decimal updated (good)
         self.REG_ADCSPI_RDBACK_BASE = 0x250 # 592 in decimal updated (good)
 
-        self.REG_LATCHLOC1_4 = 4            # wtf?? checked latch_loc0(7 downto 0)
-        self.REG_LATCHLOC5_8 = 14           # wtf?? checked - clk_spd_select
+        self.REG_LATCHLOC1_4 = 4            # checked (good) latch_loc0(7 downto 0)
+        #self.REG_LATCHLOC5_8 = 14           # wtf?? checked - clk_spd_select
         self.REG_CLKPHASE = 6
 
-        self.REG_LATCHLOC1_4_data_warm = 0x6
-        self.REG_LATCHLOC5_8_data_warm = 0x0
+        self.REG_LATCHLOC1_4_data_warm = 0x4 # 
+        #self.REG_LATCHLOC5_8_data_warm = 0x0 #
         self.REG_CLKPHASE_data_warm = 0xfffc0000
 
         self.REG_LATCHLOC1_4_data_1MHz_warm = 0x5
-        self.REG_LATCHLOC5_8_data_1MHz_warm = 0x0
+        #self.REG_LATCHLOC5_8_data_1MHz_warm = 0x0
         self.REG_CLKPHASE_data_1MHz_warm = 0xffff0000
 
         self.REG_LATCHLOC1_4_data_cold = 0x6
-        self.REG_LATCHLOC5_8_data_cold = 0x0
+        #self.REG_LATCHLOC5_8_data_cold = 0x0
         self.REG_CLKPHASE_data_cold = 0xfffc0000
 
         self.REG_LATCHLOC1_4_data_1MHz_cold = 0x4
-        self.REG_LATCHLOC5_8_data_1MHz_cold = 0x0
+        #self.REG_LATCHLOC5_8_data_1MHz_cold = 0x0
         self.REG_CLKPHASE_data_1MHz_cold = 0xfffc0001
 
         self.ADC_TESTPATTERN = [0x12, 0x345, 0x678, 0xf1f, 0xad, 0xc01, 0x234, 0x567, 0x89d, 0xeca, 0xff0, 0x123, 0x456, 0x789, 0xabc, 0xdef]
@@ -70,22 +70,22 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         self.FPGA_FREQ_MHZ = 200 # frequency of FPGA clock in MHz
         self.REG_EXTCLK_PERIOD = 20
 
-        self.REG_EXTCLK_INV       = 21
-        self.REG_EXTCLK_RST_OFF   = 22
-        self.REG_EXTCLK_RST_WID   = 23
-        self.REG_EXTCLK_READ_OFF  = 24
-        self.REG_EXTCLK_READ_WID  = 25
-        self.REG_EXTCLK_IDXM_OFF  = 26
-        self.REG_EXTCLK_IDXM_WID  = 27
-        self.REG_EXTCLK_IDXL_OFF  = 28
-        self.REG_EXTCLK_IDXL_WID  = 29
-        self.REG_EXTCLK_IDL1_OFF  = 30
-        self.REG_EXTCLK_IDL1_WID  = 31
-        self.REG_EXTCLK_IDL2_OFF  = 32
-        self.REG_EXTCLK_IDL2_WID  = 33
-        self.REG_EXTCLK_PLL_STEP0 = 34
-        self.REG_EXTCLK_PLL_STEP1 = 35
-        self.REG_EXTCLK_PLL_STEP2 = 36
+        self.REG_EXTCLK_INV       = 21 # checked (good)
+        self.REG_EXTCLK_RST_OFF   = 22 # checked (good) 
+        self.REG_EXTCLK_RST_WID   = 23 # checked (good)
+        self.REG_EXTCLK_READ_OFF  = 24 # checked (good)
+        self.REG_EXTCLK_READ_WID  = 25 # checked (good)
+        self.REG_EXTCLK_IDXM_OFF  = 26 # checked (good)
+        self.REG_EXTCLK_IDXM_WID  = 27 # checked (good)
+        self.REG_EXTCLK_IDXL_OFF  = 28 # checked (good)
+        self.REG_EXTCLK_IDXL_WID  = 29 # checked (good)
+        self.REG_EXTCLK_IDL1_OFF  = 30 # checked (good)
+        self.REG_EXTCLK_IDL1_WID  = 31 # checked (good)
+        self.REG_EXTCLK_IDL2_OFF  = 32 # checked (good)
+        self.REG_EXTCLK_IDL2_WID  = 33 # checked (good)
+        self.REG_EXTCLK_PLL_STEP0 = 34 # checked (good)
+        self.REG_EXTCLK_PLL_STEP1 = 35 # checked (good)
+        self.REG_EXTCLK_PLL_STEP2 = 36 # checked (good)
 
         self.EC_RST_OFF = 0
         self.EC_RST_WID = 50
@@ -99,6 +99,9 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         self.EC_IDL1_WID = 185
         self.EC_IDL2_OFF = 465
         self.EC_IDL2_WID = 15
+        self.EC_PLL_STEP0 =  0x000b000f # found in labview
+        self.EC_PLL_STEP1 =  0x000e0008 # found in labview
+        self.EC_PLL_STEP2 =  0x80190009 # found in labview
         ##################################
         ##################################
 
@@ -112,8 +115,8 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         self.FIRMWAREPATH2MHZ = "/home/oper/Documents/CarlosForkedRepo/femb_python/femb_python/test_measurements/adc_clock_test/code/S_SKT_ADC_CHP_TST.sof"
         #self.FIRMWAREPATH1MHZ = "/opt/sw/releases/femb_firmware-0.1.0/adc_tester/S7_1M_SBND_FPGA.sof"
         self.FIRMWAREPROGEXE = "/opt/sw/intelFPGA/17.0/qprogrammer/bin/quartus_pgm"
-        self.FIRMWAREPROGCABLE = "USB-Blaster"
-        #self.FIRMWAREPROGCABLE = "USB-BlasterII"
+        #self.FIRMWAREPROGCABLE = "USB-Blaster"
+        self.FIRMWAREPROGCABLE = "USB-BlasterII"
         self.SAMPLERATE = 2e6
 
         #initialize FEMB UDP object
@@ -577,13 +580,17 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
                 offset_idl2=470, offset_idl1=40,
                 width_rst=50, width_read=20, width_idxm=270, width_idxl=15,
                 width_idl2=15, width_idl1=185,
-                inv_rst=True, inv_read=False, inv_idxm=False, inv_idxl=False, inv_idl=False,
-                inv_clk_dis=False):
+                pll0=0x000b000f, pll1=0x000e0008, pll2=0x80190009,
+                inv_rst=True, inv_read=False, inv_idxm=False, inv_idxl=False,
+                inv_idl=False, inv_clk_dis=False):
         """
         Programs external clock. All non-boolean arguments except mult are in nanoseconds
         """
         period_val = 0 #wtf is this? is this in A01?
         inv = 0
+        rst_off = 0
+        rst_wid = 0       
+
         rd_off = 0
         rd_wid = 0
 
@@ -599,47 +606,37 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         idl_off1 = 0
         idl_wid1 = 0
 
-
+        pll0_in = 0
+        pll1_in = 0
+        pll2_in = 0
 
         if enable:
             clock = 1./self.FPGA_FREQ_MHZ * 1000. # clock now in ns
-            #print("FPGA Clock freq: {} MHz period: {} ns".format(self.FPGA_FREQ_MHZ,clock))
-            #print("ExtClock option mult: {}".format(mult))
-            #print("ExtClock option period: {} ns".format(period))
-            #print("ExtClock option offset_read: {} ns".format(offset_read))
-            #print("ExtClock option offset_rst: {} ns".format(offset_rst))
-            #print("ExtClock option offset_msb: {} ns".format(offset_msb))
-            #print("ExtClock option offset_lsb: {} ns".format(offset_lsb))
-            #print("ExtClock option offset_lsb_1st_1: {} ns".format(offset_lsb_1st_1))
-            #print("ExtClock option offset_lsb_1st_2: {} ns".format(offset_lsb_1st_2))
-            #print("ExtClock option width_read: {} ns".format(width_read))
-            #print("ExtClock option width_rst: {} ns".format(width_rst))
-            #print("ExtClock option width_msb: {} ns".format(width_msb))
-            #print("ExtClock option width_lsb: {} ns".format(width_lsb))
-            #print("ExtClock option width_lsb_1st_1: {} ns".format(width_lsb_1st_1))
-            #print("ExtClock option width_lsb_1st_2: {} ns".format(width_lsb_1st_2))
-            #print("ExtClock option inv_rst: {}".format(inv_rst))
-            #print("ExtClock option inv_read: {}".format(inv_read))
-            #print("ExtClock option inv_msb: {}".format(inv_msb))
-            #print("ExtClock option inv_lsb: {}".format(inv_lsb))
-            #print("ExtClock option inv_lsb_1st: {}".format(inv_lsb_1st))
+
             denominator = clock/mult
+            period_val = period // denominator # wtf??
 
-            period_val = period // denominator #??
+            rst_off = offset_rst // denominator
+            rst_wid = width_rst // denominator
 
-            rd_en_off =  offset_read // denominator
-            adc_off =  offset_rst // denominator
-            adc_wid =  width_rst // denominator
-            msb_off = offset_msb  // denominator
-            msb_wid = width_msb  // denominator
-            lsb_fc_wid2 = width_lsb_1st_2 // denominator
-            lsb_fc_off1 = offset_lsb_1st_1 // denominator
-            rd_en_wid = width_read // denominator
-            lsb_fc_wid1 = width_lsb_1st_1 // denominator
-            lsb_fc_off2 = offset_lsb_1st_2 // denominator
-            lsb_s_wid = width_lsb // denominator
-            lsb_s_off = offset_lsb // denominator
+            rd_off = offset_read // denominator
+            rd_wid = with_read // denominator
 
+            idxm_off = offset_idxm // denominator
+            idxm_wid = width_idxm  // denominator
+
+            idxl_off = offset_idxl  // denominator
+            idxl_wid = width_idxl // denominator
+
+            idl_off1 = offset_idl1 // denominator
+            idl_wid1 = width_idl1 // denominator
+
+            idl_off2 = offset_idl2 // denominator
+            idl_wid2 = width_idl2 // denominator
+
+            pll0_in = pll0
+            pll1_in = pll1
+            pll2_in = pll2
             #print("ExtClock denominator: {} ns".format(denominator))
 
             if inv_rst:      #INV_RST
@@ -669,6 +666,9 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
             ("WDTH_IDL1",self.REG_EXTCLK_IDL1_WID, idl_wid1),
             ("OFST_IDL2",self.REG_EXTCLK_IDL2_OFF, idl_off2),
             ("WDTH_IDL2",self.REG_EXTCLK_IDL2_WID, idl_wid2),
+            ("PLL0",self.REG_EXTCLK_PLL_STEP0, pll0_in),
+            ("PLL1",self.REG_EXTCLK_PLL_STEP1, pll1_in),
+            ("Pll2",self.REG_EXTCLK_PLL_STEP2, pll2_in),
         ]
             #("WDTH_IDXM",self.REG_EXTCLK_PERIOD, period_val), # no longer in A01
         for name,reg,val in regsValsToWrite:
