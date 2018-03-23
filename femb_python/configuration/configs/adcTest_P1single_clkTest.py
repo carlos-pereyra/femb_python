@@ -34,26 +34,25 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         super().__init__(exitOnError=exitOnError)
         #declare board specific registers
         self.FEMB_VER = "adctestP1single"
-        self.REG_RESET = 0
-        self.REG_ASIC_RESET = 1
-        self.REG_ASIC_SPIPROG = 2
-        self.REG_SEL_CH = 7
-        self.REG_HS = 17
-        self.REG_FESPI_BASE = 0x250 # 592 in decimal
-        self.REG_ADCSPI_BASE = 0x200 # 512 in decimal
-        self.REG_FESPI_RDBACK_BASE = 0x278 # 632 in decimal
-        self.REG_ADCSPI_RDBACK_BASE = 0x228 # 552 in decimal
-        self.REG_LATCHLOC1_4 = 4
-        self.REG_LATCHLOC5_8 = 14
+        self.REG_RESET = 0                  # checked (good)
+        self.REG_ASIC_RESET = 1             # checked (good)
+        self.REG_ASIC_SPIPROG = 2           # checked (good)
+        self.REG_SEL_CH = 7                 # checked (good)
+        self.REG_HS = 17                    # checked (wtf)
+        self.REG_ADCSPI_BASE = 0x200        # 512 in decimal updated (good)
+        self.REG_ADCSPI_RDBACK_BASE = 0x250 # 592 in decimal updated (good)
+
+        self.REG_LATCHLOC1_4 = 4            # wtf?? checked latch_loc0(7 downto 0)
+        self.REG_LATCHLOC5_8 = 14           # wtf?? checked - clk_spd_select
         self.REG_CLKPHASE = 6
 
-        self.REG_LATCHLOC1_4_data = 0x6
-        self.REG_LATCHLOC5_8_data = 0x0
-        self.REG_CLKPHASE_data = 0xfffc0000
+        self.REG_LATCHLOC1_4_data_warm = 0x6
+        self.REG_LATCHLOC5_8_data_warm = 0x0
+        self.REG_CLKPHASE_data_warm = 0xfffc0000
 
-        self.REG_LATCHLOC1_4_data_1MHz = 0x5
-        self.REG_LATCHLOC5_8_data_1MHz = 0x0
-        self.REG_CLKPHASE_data_1MHz = 0xffff0000
+        self.REG_LATCHLOC1_4_data_1MHz_warm = 0x5
+        self.REG_LATCHLOC5_8_data_1MHz_warm = 0x0
+        self.REG_CLKPHASE_data_1MHz_warm = 0xffff0000
 
         self.REG_LATCHLOC1_4_data_cold = 0x6
         self.REG_LATCHLOC5_8_data_cold = 0x0
@@ -69,20 +68,37 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         # external clock control registers
         ##################################
         self.FPGA_FREQ_MHZ = 200 # frequency of FPGA clock in MHz
-        self.REG_EXTCLK_RD_EN_OFF = 23
-        self.REG_EXTCLK_ADC_OFF = 21
-        self.REG_EXTCLK_ADC_WID = 22
-        self.REG_EXTCLK_MSB_OFF = 25
-        self.REG_EXTCLK_MSB_WID = 26
         self.REG_EXTCLK_PERIOD = 20
-        self.REG_EXTCLK_LSB_FC_WID2 = 32
-        self.REG_EXTCLK_LSB_FC_OFF1 = 29
-        self.REG_EXTCLK_RD_EN_WID = 24
-        self.REG_EXTCLK_LSB_FC_WID1 = 30
-        self.REG_EXTCLK_LSB_FC_OFF2 = 31
-        self.REG_EXTCLK_LSB_S_WID = 28
-        self.REG_EXTCLK_LSB_S_OFF = 27
-        self.REG_EXTCLK_INV = 33
+
+        self.REG_EXTCLK_INV       = 21
+        self.REG_EXTCLK_RST_OFF   = 22
+        self.REG_EXTCLK_RST_WID   = 23
+        self.REG_EXTCLK_READ_OFF  = 24
+        self.REG_EXTCLK_READ_WID  = 25
+        self.REG_EXTCLK_IDXM_OFF  = 26
+        self.REG_EXTCLK_IDXM_WID  = 27
+        self.REG_EXTCLK_IDXL_OFF  = 28
+        self.REG_EXTCLK_IDXL_WID  = 29
+        self.REG_EXTCLK_IDL1_OFF  = 30
+        self.REG_EXTCLK_IDL1_WID  = 31
+        self.REG_EXTCLK_IDL2_OFF  = 32
+        self.REG_EXTCLK_IDL2_WID  = 33
+        self.REG_EXTCLK_PLL_STEP0 = 34
+        self.REG_EXTCLK_PLL_STEP1 = 35
+        self.REG_EXTCLK_PLL_STEP2 = 36
+
+        self.EC_RST_OFF = 0
+        self.EC_RST_WID = 50
+        self.EC_RD_OFF = 470
+        self.EC_RD_WID = 15
+        self.EC_IDXM_OFF = 220
+        self.EC_IDXM_WID = 270
+        self.EC_IDXL_OFF = 470
+        self.EC_IDXL_WID = 15
+        self.EC_IDL1_OFF = 40
+        self.EC_IDL1_WID = 185
+        self.EC_IDL2_OFF = 465
+        self.EC_IDL2_WID = 15
         ##################################
         ##################################
 
@@ -185,11 +201,14 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
             print("Readback: ",self.getClockStr())
 
             #internal test pulser control
+            """
             self.femb.write_reg( 5, 0x00000000)
             self.femb.write_reg( 13, 0x0) #enable
-
+            """
             #Set test and readout mode register
+            """
             self.femb.write_reg( self.REG_HS, 0x0) # 0 readout all 15 channels, 1 readout only selected one
+            """
             self.femb.write_reg( self.REG_SEL_CH, 0x0000) #11-8 = channel select, 3-0 = ASIC select
 
             #Set number events per header
@@ -351,7 +370,14 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
             else:
                 f0 = 0
         if clockExternal:
-            self.extClock(enable=True)
+            #self.extClock(enable=True)
+            self.extClock(enable=True, 
+            offset_rst=self.EC_RST_OFF, offset_read=self.EC_RD_OFF,
+            offset_idxm=self.EC_IDXM_OFF, offset_idxl=self.EC_IDXL_OFF, 
+            offset_idl2=self.EC_IDL2_OFF, offset_idl1=self.EC_IDL1_OFF,
+            width_rst=self.EC_RST_WID, width_read=self.EC_RD_WID,
+            width_idxm=self.EC_IDXM_WID, width_idxl=self.EC_IDXL_WID, 
+            width_idl2=self.EC_IDL2_WID, width_idl1=self.EC_IDL1_WID,) #updated to configure clock settings for A01 firmware
         else:
             self.extClock(enable=False)
 
@@ -404,23 +430,23 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         if self.SAMPLERATE == 1e6:
             if self.COLD:
                 self.REG_LATCHLOC1_4_data_1MHz_cold = latchloc1_4
-                self.REG_LATCHLOC5_8_data_1MHz_cold = latchloc5_8
+                #self.REG_LATCHLOC5_8_data_1MHz_cold = latchloc5_8 #no reg
                 self.REG_CLKPHASE_data_1MHz_cold    = clkphase
             else:
-                self.REG_LATCHLOC1_4_data_1MHz = latchloc1_4
-                self.REG_LATCHLOC5_8_data_1MHz = latchloc5_8
-                self.REG_CLKPHASE_data_1MHz    = clkphase
+                self.REG_LATCHLOC1_4_data_1MHz_warm = latchloc1_4
+                #self.REG_LATCHLOC5_8_data_1MHz_warm = latchloc5_8 #no reg
+                self.REG_CLKPHASE_data_1MHz_warm    = clkphase
         else: # 2 MHz
             if self.COLD:
                 self.REG_LATCHLOC1_4_data_cold = latchloc1_4
-                self.REG_LATCHLOC5_8_data_cold = latchloc5_8
+                #self.REG_LATCHLOC5_8_data_cold = latchloc5_8 #no reg
                 self.REG_CLKPHASE_data_cold    = clkphase
             else:
-                self.REG_LATCHLOC1_4_data = latchloc1_4
-                self.REG_LATCHLOC5_8_data = latchloc5_8
-                self.REG_CLKPHASE_data    = clkphase
-        print("FEMB_CONFIG--> Latch latency {:#010x} {:#010x} Phase: {:#010x}".format(latchloc1_4,
-                        latchloc5_8, clkphase))
+                self.REG_LATCHLOC1_4_data_warm = latchloc1_4
+                #self.REG_LATCHLOC5_8_data_warm = latchloc5_8 #no reg
+                self.REG_CLKPHASE_data_warm    = clkphase
+        print("FEMB_CONFIG--> Latch latency {:#010x} {:#010x} Phase: {:#010x}".format
+             (latchloc1_4, latchloc5_8, clkphase))
         self.femb.write_reg ( 3, (reg3&0x7fffffff) )
         self.femb.write_reg ( 3, (reg3&0x7fffffff) )
         print("FEMB_CONFIG--> End sync ADC")
@@ -547,29 +573,33 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
 
     def extClock(self, enable=False, 
                 period=500, mult=1, 
-                offset_rst=0, offset_read=480, offset_msb=230, offset_lsb=480,
-                width_rst=50, width_read=20, width_msb=270, width_lsb=20,
-                offset_lsb_1st_1=50, width_lsb_1st_1=190,
-                offset_lsb_1st_2=480, width_lsb_1st_2=20,
-                inv_rst=True, inv_read=True, inv_msb=False, inv_lsb=False, inv_lsb_1st=False):
+                offset_rst=0, offset_read=480, offset_idxm=230, offset_idxl=480,
+                offset_idl2=470, offset_idl1=40,
+                width_rst=50, width_read=20, width_idxm=270, width_idxl=15,
+                width_idl2=15, width_idl1=185,
+                inv_rst=True, inv_read=False, inv_idxm=False, inv_idxl=False, inv_idl=False,
+                inv_clk_dis=False):
         """
         Programs external clock. All non-boolean arguments except mult are in nanoseconds
         """
-
-        rd_en_off = 0
-        adc_off = 0
-        adc_wid = 0
-        msb_off = 0
-        msb_wid = 0
-        period_val = 0
-        lsb_fc_wid2 = 0
-        lsb_fc_off1 = 0
-        rd_en_wid = 0
-        lsb_fc_wid1 = 0
-        lsb_fc_off2 = 0
-        lsb_s_wid = 0
-        lsb_s_off = 0
+        period_val = 0 #wtf is this? is this in A01?
         inv = 0
+        rd_off = 0
+        rd_wid = 0
+
+        idxm_off = 0
+        idxm_wid = 0
+
+        idxl_off = 0
+        idxl_wid = 0
+
+        idl_off2 = 0
+        idl_wid2 = 0
+
+        idl_off1 = 0
+        idl_wid1 = 0
+
+
 
         if enable:
             clock = 1./self.FPGA_FREQ_MHZ * 1000. # clock now in ns
@@ -594,8 +624,9 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
             #print("ExtClock option inv_lsb: {}".format(inv_lsb))
             #print("ExtClock option inv_lsb_1st: {}".format(inv_lsb_1st))
             denominator = clock/mult
-            #print("ExtClock denominator: {} ns".format(denominator))
-            period_val = period // denominator
+
+            period_val = period // denominator #??
+
             rd_en_off =  offset_read // denominator
             adc_off =  offset_rst // denominator
             adc_wid =  width_rst // denominator
@@ -608,37 +639,41 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
             lsb_fc_off2 = offset_lsb_1st_2 // denominator
             lsb_s_wid = width_lsb // denominator
             lsb_s_off = offset_lsb // denominator
-            if inv_rst:
-              inv += 1 << 0
-            if inv_read:
-              inv += 1 << 1
-            if inv_msb:
-              inv += 1 << 2
-            if inv_lsb:
-              inv += 1 << 3
-            if inv_lsb_1st:
-              inv += 1 << 4
 
+            #print("ExtClock denominator: {} ns".format(denominator))
+
+            if inv_rst:      #INV_RST
+              inv += 1 << 0
+            if inv_read:     #INV_READ
+              inv += 1 << 1
+            if inv_idxm:     #INV_IDXM
+              inv += 1 << 2
+            if inv_idxl:     #INV_IDXL
+              inv += 1 << 3
+            if inv_idl:      #INV_IDL
+              inv += 1 << 4
+            if inv_clk_dis:  #INV_CLK_DIS
+              inv += 1 << 5
 
         regsValsToWrite = [
-            ("rd_en_off",self.REG_EXTCLK_RD_EN_OFF, rd_en_off),
-            ("adc_off",self.REG_EXTCLK_ADC_OFF, adc_off),
-            ("adc_wid",self.REG_EXTCLK_ADC_WID, adc_wid),
-            ("msb_off",self.REG_EXTCLK_MSB_OFF, msb_off),
-            ("msb_wid",self.REG_EXTCLK_MSB_WID, msb_wid),
-            ("period",self.REG_EXTCLK_PERIOD, period_val),
-            ("lsb_fc_wid2",self.REG_EXTCLK_LSB_FC_WID2, lsb_fc_wid2),
-            ("lsb_fc_off1",self.REG_EXTCLK_LSB_FC_OFF1, lsb_fc_off1),
-            ("rd_en_wid",self.REG_EXTCLK_RD_EN_WID, rd_en_wid),
-            ("lsb_fc_wid1",self.REG_EXTCLK_LSB_FC_WID1, lsb_fc_wid1),
-            ("lsb_fc_off2",self.REG_EXTCLK_LSB_FC_OFF2, lsb_fc_off2),
-            ("lsb_s_wid",self.REG_EXTCLK_LSB_S_WID, lsb_s_wid),
-            ("lsb_s_off",self.REG_EXTCLK_LSB_S_OFF, lsb_s_off),
-            ("inv",self.REG_EXTCLK_INV, inv),
+            ("INV",self.REG_EXTCLK_INV, inv),
+            ("OFST_RST",self.REG_EXTCLK_RST_OFF, rst_off),
+            ("WDTH_RST",self.REG_EXTCLK_RST_WID, rst_wid),
+            ("OFST_READ",self.REG_EXTCLK_READ_OFF, rd_off),
+            ("WDTH_READ",self.REG_EXTCLK_READ_WID, rd_wid),
+            ("OFST_IDXM",self.REG_EXTCLK_IDXM_OFF, idxm_off),
+            ("WDTH_IDXM",self.REG_EXTCLK_IDXM_WID, idxm_wid),
+            ("OFST_IDXL",self.REG_EXTCLK_IDXL_OFF, idxl_off),
+            ("WDTH_IDXL",self.REG_EXTCLK_IDXL_WID, idxl_wid),
+            ("OFST_IDL1",self.REG_EXTCLK_IDL1_OFF, idl_off1),
+            ("WDTH_IDL1",self.REG_EXTCLK_IDL1_WID, idl_wid1),
+            ("OFST_IDL2",self.REG_EXTCLK_IDL2_OFF, idl_off2),
+            ("WDTH_IDL2",self.REG_EXTCLK_IDL2_WID, idl_wid2),
         ]
+            #("WDTH_IDXM",self.REG_EXTCLK_PERIOD, period_val), # no longer in A01
         for name,reg,val in regsValsToWrite:
             val = int(val) & 0xFFFF # only 16 bits for some reason
-            #print("ExtClock Register {0:12} number {1:3} set to {2:5} = {2:#06x}".format(name,reg,val))
+            print("ExtClock Register {0:12} number {1:3} set to {2:5} = {2:#06x}".format(name,reg,val))
             self.femb.write_reg(reg,val)
 
     def programFirmware(self, firmware):

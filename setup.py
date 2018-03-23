@@ -205,7 +205,7 @@ setup(
             'quadadc_test_summary=femb_python.test_measurements.quadAdcTester.code.quadadc_test_summary:main',
             
             #quad FE ASIC production test
-            'quadFeProdTest=femb_python.test_measurements.quadFeTestCold.run_main_cp:main',
+            'quadFeProdTest=femb_python.test_measurements.quadFeTestCold.runMainCp:main',
             'quadControlPower=femb_python.test_measurements.quadFeTestCold.doControlPower:main',
 
             #ADC ASIC - single socket clock testing
