@@ -345,6 +345,8 @@ class GUI_WINDOW(Frame):
         outfilename = os.path.join(datadir,outfilename)
         print(outfilename)
         resultdict = None
+        for i in range(self.config.NASICS):
+            serial = self.asic_entries[i].get()
         try:
             with open(outfilename) as outfile:
                 resultdict = json.load(outfile)
@@ -356,9 +358,10 @@ class GUI_WINDOW(Frame):
                 self.config.POWERSUPPLYINTER.off()
                 return
             else:
-                resultdict = {"pass":True}
-        #print("prepare result:")
-        #pprint.pprint(resultdict)
+                resultdict = {"pass":"True",
+                              "serials":serial,}
+        print("prepare result:")
+        print(resultdict)
         titles_made = False
         testNames = None
         columnbase = 0
@@ -377,7 +380,7 @@ class GUI_WINDOW(Frame):
             label.grid(row=rowbase,column=columnbase+2+iSocket)
             self.result_labels.append(label)
             # overall pass fail
-            if resultdict["pass"][iSocket]:
+            if resultdict["pass"][iSocket]=="True":
                 label = Label(self, text="PASS",bg="#00CC00")
                 label.grid(row=rowbase+2,column=columnbase+2+iSocket)
                 self.result_labels.append(label)

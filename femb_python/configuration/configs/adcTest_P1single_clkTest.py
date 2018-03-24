@@ -25,8 +25,6 @@ import subprocess
 from femb_python.femb_udp import FEMB_UDP
 from femb_python.configuration.config_base import FEMB_CONFIG_BASE, FEMBConfigError, SyncADCError, InitBoardError, ConfigADCError, ReadRegError
 from femb_python.configuration.adc_asic_reg_mapping_P1 import ADC_ASIC_REG_MAPPING
-#from femb_python.test_measurements.adc_clk_tst.adc_asic_reg_mapping import ADC_ASIC_REG_MAPPING
-
 from femb_python.test_instrument_interface.keysight_33600A import Keysight_33600A
 from femb_python.test_instrument_interface.rigol_dp800 import RigolDP800
 
@@ -108,8 +106,9 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         ##################################
 
         self.NASICS = 1
-        self.FUNCGENINTER = Keysight_33600A("/dev/usbtmc0",1)
-        self.POWERSUPPLYINTER = RigolDP800("/dev/usbtmc1",["CH2","CH3","CH1"]) # turn on CH2 first
+        self.NCHNS = 16
+        self.FUNCGENINTER = Keysight_33600A("/dev/usbtmc1",1)
+        self.POWERSUPPLYINTER = RigolDP800("/dev/usbtmc0",["CH2","CH3","CH1"]) # turn on CH2 first
         self.F2DEFAULT = 0
         self.CLKDEFAULT = "fifo"
 
@@ -123,12 +122,13 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
 
         #initialize FEMB UDP object
         self.femb = FEMB_UDP()
+        #self.fpga = FPGA_UDP()
         self.adc_reg = ADC_ASIC_REG_MAPPING()
 
     def resetBoard(self):
         #Reset system
         self.femb.write_reg( self.REG_RESET, 1) # Reg0: why write 1 to REG_RESET?
-        time.sleep(5.)
+        time.sleep(10.)
 
         #Reset registers
         self.femb.write_reg( self.REG_RESET, 0) # Reg0: why write 2 to REG_RESET?
@@ -149,7 +149,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
             
             #Reset ADC ASICs
             self.femb.write_reg( self.REG_ASIC_RESET, 1)
-            time.sleep(0.5)
+            time.sleep(5)
 
             readback = self.femb.read_reg(0)
             if readback is None:
@@ -427,12 +427,15 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         alreadySynced = True
         for a in range(0,self.NASICS,1):
             print("FEMB_CONFIG--> Test ADC " + str(a))
-            unsync, syncDicts = self.testUnsync(a)
+            unsync, syncDicts = self.testUnsync(a) #, syncDicts
             if unsync != 0:
                 alreadySynced = False
                 print("FEMB_CONFIG--> ADC not synced, try to fix")
                 self.fixUnsync(a)
         latchloc1_4 = self.femb.read_reg ( self.REG_LATCHLOC1_4 ) 
+        print("FEMB_CONFIG--> Latch latency {:#010x}".format
+             (latchloc1_4)) #trying shit
+
         #latchloc5_8 = self.femb.read_reg ( self.REG_LATCHLOC5_8 )
         clkphase    = self.femb.read_reg ( self.REG_CLKPHASE )
         if self.SAMPLERATE == 1e6:
@@ -460,7 +463,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         print("FEMB_CONFIG--> End sync ADC")
         return not alreadySynced,latchloc1_4,clkphase #,latchloc5_8 
 
-    def testUnsync(self, adc, npackets=10):
+    def testUnsync(self, adc, npackets=1):
         print("Starting testUnsync adc: ",adc)
         adcNum = int(adc)
         if (adcNum < 0 ) or (adcNum > 7 ):
@@ -468,6 +471,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
                 return
 
         #loop through channels, check test pattern against data
+
         syncDataCounts = [{} for i in range(16)] #dict for each channel
         for ch in range(0,16,1):
                 self.selectChannel(adcNum,ch, 1)
@@ -564,7 +568,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
                 self.femb.write_reg ( self.REG_ASIC_SPIPROG, 1)
                 time.sleep(0.01)
                 #test link
-                unsync, syncDicts = self.testUnsync(adcNum)
+                unsync, syncDicts = self.testUnsync(adcNum) #, syncDicts
                 if unsync == 0 :
                     print("FEMB_CONFIG--> ADC synchronized")
                     return
@@ -735,3 +739,9 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
 
     def getSyncStatus(self):
         return [None],[True],None
+
+    """
+    testing
+    """
+
+
