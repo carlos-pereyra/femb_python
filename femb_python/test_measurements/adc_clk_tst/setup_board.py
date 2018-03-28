@@ -18,7 +18,7 @@ from subprocess import CalledProcessError
 import numpy
 import matplotlib.pyplot as plt
 import ROOT
-from ...configuration.config_base import InitBoardError, SyncADCError, ConfigADCError, ReadRegError
+from femb_python.configuration.config_base import InitBoardError, SyncADCError, ConfigADCError, ReadRegError
 
 def setup_board(config,outfilename,adcSerialNumbers,startDateTime,operator,board_id,hostname,timestamp=None,power_on=True,power_off=True,sumatradict=None):
     """
@@ -57,7 +57,8 @@ def setup_board(config,outfilename,adcSerialNumbers,startDateTime,operator,board
         if power_on:
             config.POWERSUPPLYINTER.on()
         time.sleep(1)
-        config.resetBoard()
+        config.femb_eh.init_ports(config.PC_IP, config.FPGA_IP)
+        config.resetBoardNew()
         reg2 = config.femb.read_reg(1)
         if reg2 is None:
             print("Board/chip Failure: couldn't read a register.")
@@ -69,7 +70,7 @@ def setup_board(config,outfilename,adcSerialNumbers,startDateTime,operator,board
         else:
             result["readReg"] = True
         try:
-            config.initBoard()
+            config.initBoardNew()
         except ReadRegError:
             print("Board/chip Failure: couldn't read a register so couldn't initialize board.")
             result["init"] = False;
@@ -102,7 +103,10 @@ def setup_board(config,outfilename,adcSerialNumbers,startDateTime,operator,board
         result["configFE"] = feSPIStatus
         for iChip in range(len(adcSerialNumbers)):
             try:
-                syncStatus = config.syncADC(iChip)
+                config.femb_eh.init_ports(config.PC_IP, config.FPGA_IP)
+                config.resetBoardNew()
+                config.initBoardNew()
+                syncStatus = config.syncADCNew(iChip)
             except SyncADCError:
                 print("Board/chip Failure: couldn't sync ADCs.")
                 result["sync"][iChip] = False;
@@ -119,8 +123,8 @@ def setup_board(config,outfilename,adcSerialNumbers,startDateTime,operator,board
         json.dump(result,outfile)
 
 def main():
-    from ...configuration.argument_parser import ArgumentParser
-    from ...configuration import CONFIG
+    from femb_python.configuration.argument_parser import ArgumentParser
+    from femb_python.configuration import CONFIG
 
     ROOT.gROOT.SetBatch(True)
 
@@ -179,3 +183,7 @@ def main():
         if power_off:
             config.POWERSUPPLYINTER.off()
         sys.exit(1)
+
+if __name__ == '__main__':
+    main()
+
