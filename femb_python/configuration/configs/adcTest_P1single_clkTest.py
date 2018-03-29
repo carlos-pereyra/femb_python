@@ -977,7 +977,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         for ch in range(0,16,1):
             syncDicts[ch]["data"] = True
             syncDicts[ch]["maxCodeMatchesExpected"] = True
-            for test in range(0,100,1):
+            for test in range(0,1,1):
                 data, bs, ex = self.get_data_chipXchnX(chip = adcNum, chn = ch, packets = 1)
                 if (ex == 0):
                     syncDicts[ch]["maxCodeMatchesExpected"] = False                    
@@ -997,7 +997,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
                             print ("testUnsyncNew() -> chip {} chn {} looking for {}, found {}".format(adcNum, ch, hex(self.ADC_TESTPATTERN[ch]), hex(samp)))
                             badSync = 0
                             break
-                if (badSync == 1):
+                if (badSync == 1 ):
                    break
 
         return badSync, syncDicts
@@ -1006,7 +1006,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         print ("FEMB_CONFIG--> Final sync check to make sure")
         for a in range(0,self.NASICS,1):
             
-            self.adc_reg_new.set_adc_global(chip = a, f5 = 1)
+            self.adc_reg_new.set_adc_global(chip = a, f5 = 1) # Test DATA
             self.configAdcAsicNew(True)
             
             # quad board settings:
@@ -1048,12 +1048,42 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
             self.configAdcAsicNew(False)
             print ("FEMB_CONFIG--> Chip {} recieved the correct test values!".format(a))
         
-            badSync, syncDicts = self.testUnsyncNew(a) #returns badSync
+            badSync, syncDicts = self.testUnsyncNew(a) #checks conv error & header error
             if (badSync == 1):
                 self.femb.write_reg(9, 1)
                 sys.exit("FEMB_CONFIG--> Sync failed in the final check")                
                 
-        self.adc_reg_new.set_adc_global(chip = a, f5 = 0)
+        self.adc_reg_new.set_adc_global(chip = a, f5 = 0) # Adc DATA
+        self.configAdcAsicNew(True)
+        for j in range(100):    #reset sync error
+            self.femb_eh.write_reg(11, 1) # ERROR_RESET <= reg11_p(0)
+            time.sleep(0.01)
+            self.femb_eh.write_reg(11, 0) # ERROR_RESET <= reg11_p(0)
+            time.sleep(0.01)
+            conv_error = self.femb_eh.read_reg(12)     # reg12_i => x"" & CONV_ERROR 
+            header_error = self.femb_eh.read_reg(13)   # reg13_i => HDR2_ERROR & HDR1_ERROR 
+            error = False
+            
+            if (conv_error != 0):
+                error = True # conv error
+                
+            if (header_error != 0):
+                error = True # header error
+
+            if (error == True):               
+                print ("testUnsyncNew() -> conv error: {} header error: {} : {}".format(conv_error,header_error, j)) # no errors
+
+            if (error == False):
+                print ("testUnsyncNew() -> conv error: {} header error: {} : {}".format(conv_error,header_error, j)) #break loop if no error found
+                break
+
+            elif (j > 60):
+                badSync = 1
+                break
+            else:
+                self.configAdcAsicNew(False)
+                #print ("Loop {}".format(j))
+
 
     def configAdcAsicNew(self, to_print = True): #cp 1/29/18 #helper
         Adcasic_regs = self.adc_reg_new.REGS
@@ -1139,7 +1169,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
             elif (unsync == 1):
                 print ("FEMB_CONFIG--> ADC {} synced!".format(a))
                 
-            self.adc_reg_new.set_adc_global(chip = a, f5 = 1)
+            self.adc_reg_new.set_adc_global(chip = a, f5 = 1) # Test DATA
             self.configAdcAsicNew(True)
             
         self.FinalSyncCheck()
