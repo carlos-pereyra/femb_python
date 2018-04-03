@@ -41,6 +41,7 @@ matplotlib.rc('xtick',labelsize=8)
 matplotlib.rc('ytick',labelsize=8)
 
 from femb_python.femb_udp import FEMB_UDP
+from femb_python.test_measurements.adc_clk_tst.femb_udp_cmdline import FPGA_UDP
 from femb_python.write_root_tree import WRITE_ROOT_TREE
 
 class TRACE_ALLCHAN_WINDOW(Tk.Frame):
@@ -48,7 +49,7 @@ class TRACE_ALLCHAN_WINDOW(Tk.Frame):
   This window displays a live ADC redout
   """
   
-  def __init__(self, master=None, packedHighSpeed=False):
+  def __init__(self, master=None, packedHighSpeed=True):
     self.maxtraces = 5
     self.selChan = 0
 
@@ -86,6 +87,7 @@ class TRACE_ALLCHAN_WINDOW(Tk.Frame):
 
   def reset(self,iTrace=None):
     self.femb = FEMB_UDP()
+    self.femb_eh = FPGA_UDP()
     self.figure.clf()
     self.subgs = [None]*16
     self.ax = [None]*16
@@ -177,7 +179,8 @@ class TRACE_ALLCHAN_WINDOW(Tk.Frame):
     data = None
     timestamp = None
     if iTrace is None:
-        data = self.femb.get_data(100)
+        #data = self.femb.get_data(num = 100)
+        data = self.femb_eh.get_data_packets(data_type = "int", num = 20, header = False)
         timestamp = datetime.datetime.now()
         self.traces.append(data)
         self.timestamps.append(timestamp)

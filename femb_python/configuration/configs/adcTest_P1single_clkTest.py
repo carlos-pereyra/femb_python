@@ -95,7 +95,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         self.EC_RD_OFF = 470
         self.EC_RD_WID = 15
         self.EC_IDXM_OFF = 220
-        self.EC_IDXM_WID = 270
+        self.EC_IDXM_WID = 270 #270
         self.EC_IDXL_OFF = 470
         self.EC_IDXL_WID = 15
         self.EC_IDL1_OFF = 40
@@ -110,7 +110,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         self.inv_idxm=False
         self.inv_idxl=False
         self.inv_idl=False
-        self.inv_clk_dis=False
+        #self.inv_clk_dis=True
 
         ##################################
         ##################################
@@ -141,282 +141,6 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         self.PC_IP = self.femb_eh.PC_IP
         self.FPGA_IP = self.femb_eh.FPGA_IP
 
-    def resetBoard(self):
-        #Reset system
-        self.femb.write_reg( self.REG_RESET, 1) # Reg0: why write 1 to REG_RESET?
-        time.sleep(10.)
-
-        #Reset registers
-        self.femb.write_reg( self.REG_RESET, 2) # Reg0: why write 2 to REG_RESET?
-        time.sleep(1.)
-
-        #Time stamp reset
-        #femb.write_reg( 0, 4)
-        #time.sleep(0.5)
-        
-        #Reset ADC ASICs
-        self.femb.write_reg( self.REG_ASIC_RESET, 1) #Reg1
-        time.sleep(0.5)
-
-        #Reset ADC ASICs
-        #self.femb.write_reg( self.REG_ASIC_RESET, 1)
-        #time.sleep(5)
-
-        readback = self.femb.read_reg(0)
-        if readback is None:
-            if self.exitOnError:
-                print("FEMB_CONFIG: Error reading register 0, Exiting.")
-                sys.exit(1)
-            else:
-                raise ReadRegError("Couldn't read register 0")
-
-
-    def initBoard(self):
-        nRetries = 5
-        for iRetry in range(nRetries):
-            #set up default registers
-
-            # Frame size is multiple of 13, so 0xFACE is consistently the first 2 bytes.
-            frame_size = self.frame_size
-            if (frame_size%13 != 0):
-                frame_size = 13 * (frame_size//13)
-            self.femb.write_reg(10, frame_size)
-            time.sleep(0.1)
-
-            # Set to WIB Mode and start by reading out chip 1
-            # Channel Setting is irrelevant in WIB mode
-            self.femb.write_reg(8, 0x80000001) # WIB_MODE   <= reg8_p(0)
-            self.femb.write_reg(7, 0x80000000) # CHN_select <= reg7_p(7 downto 0)            
-
-            #Set ADC test pattern register
-            self.femb.write_reg( 3, 0x01170000) # test pattern off
-            #self.femb.write_reg( 3, 0x81170000) # test pattern on
-
-            #Set ADC latch_loc and clock phase
-            latchloc1 = None
-            #latchloc5 = None
-            clockphase = None
-            if self.SAMPLERATE == 1e6:
-                if self.COLD:
-                    print("Using 1 MHz cold latchloc/clockphase")
-                    latchloc1 = self.REG_LATCHLOC1_4_data_1MHz_cold
-                    #latchloc5 = self.REG_LATCHLOC5_8_data_1MHz_cold
-                    clockphase = self.REG_CLKPHASE_data_1MHz_cold
-                else:
-                    print("Using 1 MHz warm latchloc/clockphase")
-                    latchloc1 = self.REG_LATCHLOC1_4_data_1MHz_warm
-                    #latchloc5 = self.REG_LATCHLOC5_8_data_1MHz_warm
-                    clockphase = self.REG_CLKPHASE_data_1MHz_warm
-            else: # use 2 MHz values
-                if self.COLD:
-                    print("Using 2 MHz cold latchloc/clockphase")
-                    latchloc1 =  self.REG_LATCHLOC1_4_data_cold
-                    #latchloc5 =  self.REG_LATCHLOC5_8_data_cold
-                    clockphase =  self.REG_CLKPHASE_data_cold
-                else:
-                    print("Using 2 MHz warm latchloc/clockphase")
-                    latchloc1 = self.REG_LATCHLOC1_4_data_warm
-                    #latchloc5 = self.REG_LATCHLOC5_8_data_warm
-                    clockphase = self.REG_CLKPHASE_data_warm
-
-            print("Initializing with Latch Loc: {:#010x} Clock Phase: {:#010x}".format(latchloc1,clockphase)) #,latchloc5
-            self.femb.write_reg( self.REG_LATCHLOC1_4, latchloc1)
-            #self.femb.write_reg( self.REG_LATCHLOC5_8, latchloc5)
-            for iTry in range(5):
-                self.femb.write_reg( self.REG_CLKPHASE, ~clockphase)
-                time.sleep(0.05)
-                self.femb.write_reg( self.REG_CLKPHASE, ~clockphase)
-                time.sleep(0.05)
-                self.femb.write_reg( self.REG_CLKPHASE, clockphase)
-                time.sleep(0.05)
-                self.femb.write_reg( self.REG_CLKPHASE, clockphase)
-                time.sleep(0.05)
-                
-            print("Readback: ",self.getClockStr())
-
-            #Configure ADC (and external clock inside)
-            try:
-                self.configAdcAsic()
-                #self.configAdcAsic(clockMonostable=True)
-            except ReadRegError:
-                continue
-
-            #self.femb.write_reg ( self.REG_ASIC_SPIPROG, 0x30) #new
-            #self.femb.write_reg ( self.REG_ASIC_SPIPROG, 0)    #new
-
-            # Check that board streams data
-            data = self.femb.get_data(1)
-            if data == None:
-                print("Board not streaming data, retrying initialization...")
-                continue # try initializing again
-            print("FEMB_CONFIG--> Reset FEMB is DONE")
-            return
-        print("Error: Board not streaming data after trying to initialize {} times.".format(nRetries))
-        if self.exitOnError:
-            print("Exiting.")
-            sys.exit(1)
-        else:
-            raise InitBoardError
-
-
-    def configAdcAsic(self,enableOffsetCurrent=None,offsetCurrent=None,testInput=None,
-                            freqInternal=None,sleep=None,pdsr=None,pcsr=None,
-                            clockMonostable=None,clockExternal=None,clockFromFIFO=None,
-                            sLSB=None,f0=None,f1=None,f2=None,f3=None,f4=None,f5=None,
-                            to_print = True):
-        """
-        Configure ADCs
-          enableOffsetCurrent: 0 disable offset current, 1 enable offset current
-          offsetCurrent: 0-15, amount of current to draw from sample and hold
-          testInput: 0 digitize normal input, 1 digitize test input
-          freqInternal: internal clock frequency: 0 1MHz, 1 2MHz
-          sleep: 0 disable sleep mode, 1 enable sleep mode
-          pdsr: if pcsr=0: 0 PD is low, 1 PD is high
-          pcsr: 0 power down controlled by pdsr, 1 power down controlled externally
-          Only one of these can be enabled:
-            clockMonostable: True ADC uses monostable clock
-            clockExternal: True ADC uses external clock
-            clockFromFIFO: True ADC uses digital generator FIFO clock
-          sLSB: LSB current steering mode. 0 for full, 1 for partial (ADC7 P1)
-          f0, f1, f2, f3, f4, f5: version specific
-        """
-        FEMB_CONFIG_BASE.configAdcAsic(self,clockMonostable=clockMonostable,
-                                        clockExternal=clockExternal,clockFromFIFO=clockFromFIFO)
-        if enableOffsetCurrent is None:
-            enableOffsetCurrent=0
-        if offsetCurrent is None:
-            offsetCurrent=0
-        else:
-            offsetCurrent = int("{:04b}".format(offsetCurrent)[::-1],2) # need to reverse bits, use string/list tricks
-        if testInput is None:
-            testInput=1
-        if freqInternal is None:
-            freqInternal=1
-        if sleep is None:
-            sleep=0
-        if pdsr is None:
-            pdsr=0
-        if pcsr is None:
-            pcsr=0
-        if sLSB is None:
-            sLSB = 0
-        if f1 is None:
-            f1 = 0
-        if f2 is None:
-            f2 = 0
-        if f3 is None:
-            f3 = 0
-        if f4 is None:
-            f4 = 1
-        if f5 is None:
-            f5 = 0
-        if not (clockMonostable or clockExternal or clockFromFIFO):
-            clockExternal=True
-        # a bunch of things depend on the clock choice
-        clk0=0
-        clk1=0
-        if clockExternal:
-            clk0=1
-            clk1=0
-        elif clockFromFIFO:
-            clk0=0
-            clk1=1
-        if f0 is None:
-            if clockExternal:
-                f0 = 1
-            else:
-                f0 = 0
-        if clockExternal:
-            #self.extClock(enable=True)
-            self.extClock(enable=True, 
-            offset_rst=self.EC_RST_OFF, offset_read=self.EC_RD_OFF,
-            offset_idxm=self.EC_IDXM_OFF, offset_idxl=self.EC_IDXL_OFF, 
-            offset_idl2=self.EC_IDL2_OFF, offset_idl1=self.EC_IDL1_OFF,
-            width_rst=self.EC_RST_WID, width_read=self.EC_RD_WID,
-            width_idxm=self.EC_IDXM_WID, width_idxl=self.EC_IDXL_WID, 
-            width_idl2=self.EC_IDL2_WID, width_idl1=self.EC_IDL1_WID,
-            pll0=self.EC_PLL_STEP0,
-            pll1=self.EC_PLL_STEP1,
-            pll2=self.EC_PLL_STEP2) #updated to configure clock settings for A01 firmware
-        else:
-            self.extClock(enable=False)
-
-        #self.adc_reg.set_sbnd_board(en_gr=enableOffsetCurrent,d=offsetCurrent,tstin=testInput,frqc=freqInternal,slp=sleep,pdsr=pdsr,pcsr=pcsr,clk0=clk0,clk1=clk1,f0=f0,f1=f1,f2=f2,f3=f3,f4=f4,f5=f5,slsb=sLSB)
-        self.configAdcAsic_regs(self.adc_reg.REGS, to_print)
-
-
-    def configAdcAsic_regs(self,Adcasic_regs, to_print = True):
-        #ADC ASIC SPI registers
-        assert(len(Adcasic_regs)==36)
-        if (to_print):
-            print("FEMB_CONFIG--> Config ADC ASIC SPI")
-        for k in range(10):
-            i = 0
-            for regNum in range(self.REG_ADCSPI_BASE,self.REG_ADCSPI_BASE+len(Adcasic_regs),1):
-                    self.femb.write_reg ( regNum, Adcasic_regs[i])
-                    time.sleep(0.05)
-                    i = i + 1
-
-            #print("  ADC ASIC write : ",Adcasic_regs)
-            #ADC ASIC sync -- Justin: I don't think this exists anymore
-            #self.femb.write_reg ( 17, 0x1) # controls HS link, 0 for on, 1 for off
-            #self.femb.write_reg ( 17, 0x0) # controls HS link, 0 for on, 1 for off        
-
-            #Write ADC ASIC SPI
-            if (to_print):
-                print("FEMB_CONFIG--> Program ADC ASIC SPI")
-            self.femb.write_reg ( self.REG_ASIC_RESET, 1)
-            time.sleep(0.1)
-            self.femb.write_reg ( self.REG_ASIC_SPIPROG, 1)
-            time.sleep(0.1)
-            self.femb.write_reg ( self.REG_ASIC_SPIPROG, 1)
-            time.sleep(0.1)
-
-            #enable streaming
-            #self.femb.write_reg( 9, 0x1)
-
-            #LBNE_ADC_MODE
-            self.femb.write_reg( 18, 0x1)
-            if(to_print):
-                print("FEMB_CONFIG--> Check ADC ASIC SPI")
-            adcasic_rb_regs = []
-            for regNum in range(self.REG_ADCSPI_RDBACK_BASE,self.REG_ADCSPI_RDBACK_BASE+len(Adcasic_regs),1):
-                val = self.femb.read_reg (regNum) 
-                if val is None:
-                    message = "Error in FEMB_CONFIG.configAdcAsic_regs: read from board failed"
-                    print(message)
-                    if self.exitOnError:
-                        return
-                    else:
-                        raise ReadRegError
-                adcasic_rb_regs.append( val )
-
-            #print("{:32}  {:32}".format("Write","Readback"))
-            #print("{:8}  {:8}".format("Write","Readback"))
-            # we only get 15 LSBs back so miss D0 for a channel and CLK0
-            readbackMatch = True
-            for regNum in range(36):
-                write_val = Adcasic_regs[regNum] #& 0x7FFF
-                readback_val = adcasic_rb_regs[(regNum + 9) % 36] >> 1
-                # we only get the 15 LSBs back
-                if readback_val != (Adcasic_regs[regNum] & 0x7FFF):
-                    readbackMatch = False
-                #print("{:032b}  {:032b}".format(write_val,readback_val))
-                #print("{:08X}  {:08X}".format(write_val,readback_val))
-
-            if readbackMatch:
-                if(to_print):
-                    print("FEMB_CONFIG--> ADC ASIC SPI is OK")
-                return
-            else: 
-                print("FEMB_CONFIG--> ADC ASIC Readback didn't match, retrying...")
-        print("Error: Wrong ADC SPI readback.")
-        if self.exitOnError:
-            print("Exiting.")
-            sys.exit(1)
-        else:
-            raise ConfigADCError
-
 
     def selectChannel(self,asic,chan,hsmode=1,singlechannelmode=None):
         """
@@ -436,283 +160,12 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
                 return
 
         #print( "Selecting ASIC " + str(asicVal) + ", channel " + str(chVal))
-
+        self.femb.write_reg(8, 0x80000001)                  # WIB_MODE   <= reg8_p(0) 
+        """
         self.femb.write_reg ( self.REG_HS, hsmodeVal)
         regVal = (chVal << 8 ) + asicVal
         self.femb.write_reg( self.REG_SEL_CH, regVal)
-
-    def syncADC(self,iASIC=None):
-        #turn on ADC test mode
-        print("\nFEMB_CONFIG--> Start sync ADC")
-        reg3 = self.femb.read_reg (3)
-        newReg3 = ( reg3 | 0x80000000 )
-
-        self.femb.write_reg ( 3, newReg3 ) #31 - enable ADC test pattern
-        time.sleep(0.1)        
-        self.femb.write_reg(8, 0x80000000) # WIB_MODE   <= reg8_p(0)
-
-        alreadySynced = True
-        for a in range(0,self.NASICS,1):
-            print("FEMB_CONFIG--> Test ADC " + str(a))
-            unsync, syncDicts = self.testUnsync(a) #, syncDicts
-            if unsync != 0:
-                alreadySynced = False
-                print("FEMB_CONFIG--> ADC not synced, try to fix")
-                self.fixUnsync(a)
-        latchloc1_4 = self.femb.read_reg ( self.REG_LATCHLOC1_4 ) 
-        print("FEMB_CONFIG--> Latch latency {:#010x}".format
-             (latchloc1_4)) #trying shit
-
-        #latchloc5_8 = self.femb.read_reg ( self.REG_LATCHLOC5_8 )
-        clkphase    = self.femb.read_reg ( self.REG_CLKPHASE )
-        if self.SAMPLERATE == 1e6:
-            if self.COLD:
-                self.REG_LATCHLOC1_4_data_1MHz_cold = latchloc1_4
-                #self.REG_LATCHLOC5_8_data_1MHz_cold = latchloc5_8 #no reg
-                self.REG_CLKPHASE_data_1MHz_cold    = clkphase
-            else:
-                self.REG_LATCHLOC1_4_data_1MHz_warm = latchloc1_4
-                #self.REG_LATCHLOC5_8_data_1MHz_warm = latchloc5_8 #no reg
-                self.REG_CLKPHASE_data_1MHz_warm    = clkphase
-        else: # 2 MHz
-            if self.COLD:
-                self.REG_LATCHLOC1_4_data_cold = latchloc1_4
-                #self.REG_LATCHLOC5_8_data_cold = latchloc5_8 #no reg
-                self.REG_CLKPHASE_data_cold    = clkphase
-            else:
-                self.REG_LATCHLOC1_4_data_warm = latchloc1_4
-                #self.REG_LATCHLOC5_8_data_warm = latchloc5_8 #no reg
-                self.REG_CLKPHASE_data_warm    = clkphase
-        print("FEMB_CONFIG--> Latch latency {:#010x} Phase: {:#010x}".format
-             (latchloc1_4, clkphase))
-        self.femb.write_reg ( 3, (reg3&0x7fffffff) )
-        self.femb.write_reg ( 3, (reg3&0x7fffffff) )
-        print("FEMB_CONFIG--> End sync ADC")
-        return not alreadySynced,latchloc1_4,clkphase #,latchloc5_8 
-
-
-    def fixUnsync(self, adc):
-        adcNum = int(adc)
-        if (adcNum < 0 ) or (adcNum > 7 ):
-                print("FEMB_CONFIG--> femb_config_femb : testLink - invalid asic number")
-                return
-
-        initLATCH1_4 = self.femb.read_reg ( self.REG_LATCHLOC1_4 )
-        #initLATCH5_8 = self.femb.read_reg ( self.REG_LATCHLOC5_8 )
-        initPHASE = self.femb.read_reg ( self.REG_CLKPHASE )
-
-        phases = [0,1]
-        if self.COLD:
-            phases = [0,1,0,1,0]
-
-        #loop through sync parameters
-        for shift in range(0,16,1):
-            shiftMask = (0x3F << 8*adcNum)
-            if ( adcNum < 4 ):
-                testShift = ( (initLATCH1_4 & ~(shiftMask)) | (shift << 8*adcNum) )
-                self.femb.write_reg ( self.REG_LATCHLOC1_4, testShift )
-                time.sleep(0.01)
-            else:
-                #testShift = ( (initLATCH5_8 & ~(shiftMask)) | (shift << 8*adcNum) )
-                #self.femb.write_reg ( self.REG_LATCHLOC5_8, testShift )
-                time.sleep(0.01)
-            for phase in phases:
-                clkMask = (0x1 << adcNum)
-                testPhase = ( (initPHASE & ~(clkMask)) | (phase << adcNum) ) 
-                self.femb.write_reg ( self.REG_CLKPHASE, testPhase )
-                time.sleep(0.01)
-                print("try shift: {} phase: {} testingUnsync...".format(shift,phase))
-                print("     initPHASE: {:#010x}, phase: {:#010x}, testPhase: {:#010x}".format(initPHASE,phase,testPhase))
-                #reset ADC ASIC
-                self.femb.write_reg ( self.REG_ASIC_RESET, 1)
-                time.sleep(0.01)
-                self.femb.write_reg ( self.REG_ASIC_SPIPROG, 1)
-                time.sleep(0.01)
-                self.femb.write_reg ( self.REG_ASIC_SPIPROG, 1)
-                time.sleep(0.01)
-                #test link
-                unsync, syncDicts = self.testUnsync(adcNum) #, syncDicts
-                if unsync == 0 :
-                    print("FEMB_CONFIG--> ADC synchronized")
-                    return
-        #if program reaches here, sync has failed
-        print("Error: FEMB_CONFIG--> ADC SYNC process failed for ADC # " + str(adc))
-        #print("Setting back to original values: LATCHLOC1_4: {:#010x}, LATCHLOC5_8: {:#010x}, PHASE: {:#010x}".format,initLATCH1_4,initLATCH5_8,initPHASE)
-        self.femb.write_reg ( self.REG_LATCHLOC1_4, initLATCH1_4 )
-        #self.femb.write_reg ( self.REG_LATCHLOC5_8, initLATCH5_8 )
-        self.femb.write_reg ( self.REG_CLKPHASE, initPHASE )
-        if self.exitOnError:
-            sys.exit(1)
-        else:
-            raise SyncADCError
-
-
-    def testUnsync(self, adc, npackets=1):
-        print("Starting testUnsync adc: ",adc)
-        adcNum = int(adc)
-        if (adcNum < 0 ) or (adcNum > 7 ):
-                print("FEMB_CONFIG--> femb_config_femb : testLink - invalid asic number")
-                return
-
-        #loop through channels, check test pattern against data
-        syncDataCounts = [{} for i in range(16)] #dict for each channel
-        for ch in range(0,16,1):
-                self.selectChannel(adcNum,ch, 1)
-                time.sleep(0.05)                
-                data = self.femb.get_data(npackets)
-                if data == None:
-                    continue
-                for samp in data:
-                        if samp == None:
-                                continue
-                        #chNum = ((samp >> 12 ) & 0xF)
-                        sampVal = (samp & 0xFFF)
-                        if sampVal in syncDataCounts[ch]:
-                            syncDataCounts[ch][sampVal] += 1
-                        else:
-                            syncDataCounts[ch][sampVal] = 1
-        # check jitter
-        badSync = 0
-        maxCodes = [None]*16
-        syncDicts = [{}]*16
-        for ch in range(0,16,1):
-            sampSum = 0
-            maxCode = None
-            nMaxCode = 0
-            for code in syncDataCounts[ch]:
-                nThisCode = syncDataCounts[ch][code]
-                sampSum += nThisCode
-                if nThisCode > nMaxCode:
-                    nMaxCode = nThisCode
-                    maxCode = code
-            maxCodes[ch] = maxCode
-            syncDicts[ch]["maxCode"] = maxCode
-            syncDicts[ch]["nSamplesMaxCode"] = nMaxCode
-            syncDicts[ch]["nSamples"] = sampSum
-            syncDicts[ch]["zeroJitter"] = True
-            if len(syncDataCounts[ch]) > 1:
-                syncDicts[ch]["zeroJitter"] = False
-                badSync = 1
-                diff = sampSum-nMaxCode
-                frac = diff / float(sampSum)
-                print("Sync Error: Jitter for Ch {:2}: {:8.4%} ({:5}/{:5})".format(ch,frac,diff,sampSum))
-        for ch in range(0,16,1):
-            maxCode = maxCodes[ch]
-            correctCode = self.ADC_TESTPATTERN[ch]
-            syncDicts[ch]["data"] = True
-            syncDicts[ch]["maxCodeMatchesExpected"] = True
-            if maxCode is None:
-                syncDicts[ch]["data"] = False
-                badSync = 1
-                print("Sync Error: no data for ch {:2} data: {}".format(ch, data))
-            elif maxCode != correctCode:
-                syncDicts[ch]["maxCodeMatchesExpected"] = True
-                badSync = 1
-                print("Sync Error: mismatch for ch {:2}: expected {:#03x} observed {:#03x}".format(ch,correctCode,maxCode))
-        return badSync, syncDicts
-
-
-    def extClock(self, enable=False, 
-                period=500, mult=1, 
-                offset_rst=0, offset_read=480, offset_idxm=230, offset_idxl=480,
-                offset_idl2=470, offset_idl1=40,
-                width_rst=50, width_read=20, width_idxm=270, width_idxl=15,
-                width_idl2=15, width_idl1=185,
-                pll0=0x000b000f, pll1=0x000e0008, pll2=0x80190009,
-                inv_rst=True, inv_read=False, inv_idxm=False, inv_idxl=False,
-                inv_idl=False, inv_clk_dis=False):
         """
-        Programs external clock. All non-boolean arguments except mult are in nanoseconds
-        """
-        period_val = 0 #wtf is this? is this in A01?
-        inv = 0
-        rst_off = 0
-        rst_wid = 0       
-
-        rd_off = 0
-        rd_wid = 0
-
-        idxm_off = 0
-        idxm_wid = 0
-
-        idxl_off = 0
-        idxl_wid = 0
-
-        idl_off2 = 0
-        idl_wid2 = 0
-
-        idl_off1 = 0
-        idl_wid1 = 0
-
-        pll0_in = 0
-        pll1_in = 0
-        pll2_in = 0
-
-        if enable:
-            clock = 1./self.FPGA_FREQ_MHZ * 1000. # clock now in ns
-
-            denominator = clock/mult
-            period_val = period // denominator # wtf??
-
-            rst_off = offset_rst // denominator
-            rst_wid = width_rst // denominator
-
-            rd_off = offset_read // denominator
-            rd_wid = width_read // denominator
-
-            idxm_off = offset_idxm // denominator
-            idxm_wid = width_idxm  // denominator
-
-            idxl_off = offset_idxl  // denominator
-            idxl_wid = width_idxl // denominator
-
-            idl_off1 = offset_idl1 // denominator
-            idl_wid1 = width_idl1 // denominator
-
-            idl_off2 = offset_idl2 // denominator
-            idl_wid2 = width_idl2 // denominator
-
-            pll0_in = pll0
-            pll1_in = pll1
-            pll2_in = pll2
-            #print("ExtClock denominator: {} ns".format(denominator))
-
-            if inv_rst:      #INV_RST
-              inv += 1 << 0
-            if inv_read:     #INV_READ
-              inv += 1 << 1
-            if inv_idxm:     #INV_IDXM
-              inv += 1 << 2
-            if inv_idxl:     #INV_IDXL
-              inv += 1 << 3
-            if inv_idl:      #INV_IDL
-              inv += 1 << 4
-            if inv_clk_dis:  #INV_CLK_DIS
-              inv += 1 << 5
-
-        regsValsToWrite = [
-            ("INV",self.REG_EXTCLK_INV, inv),
-            ("OFST_RST",self.REG_EXTCLK_RST_OFF, rst_off),
-            ("WDTH_RST",self.REG_EXTCLK_RST_WID, rst_wid),
-            ("OFST_READ",self.REG_EXTCLK_READ_OFF, rd_off),
-            ("WDTH_READ",self.REG_EXTCLK_READ_WID, rd_wid),
-            ("OFST_IDXM",self.REG_EXTCLK_IDXM_OFF, idxm_off),
-            ("WDTH_IDXM",self.REG_EXTCLK_IDXM_WID, idxm_wid),
-            ("OFST_IDXL",self.REG_EXTCLK_IDXL_OFF, idxl_off),
-            ("WDTH_IDXL",self.REG_EXTCLK_IDXL_WID, idxl_wid),
-            ("OFST_IDL1",self.REG_EXTCLK_IDL1_OFF, idl_off1),
-            ("WDTH_IDL1",self.REG_EXTCLK_IDL1_WID, idl_wid1),
-            ("OFST_IDL2",self.REG_EXTCLK_IDL2_OFF, idl_off2),
-            ("WDTH_IDL2",self.REG_EXTCLK_IDL2_WID, idl_wid2),
-            ("PLL0",self.REG_EXTCLK_PLL_STEP0, pll0_in),
-            ("PLL1",self.REG_EXTCLK_PLL_STEP1, pll1_in),
-            ("Pll2",self.REG_EXTCLK_PLL_STEP2, pll2_in),
-        ]
-            #("WDTH_IDXM",self.REG_EXTCLK_PERIOD, period_val), # no longer in A01
-        for name,reg,val in regsValsToWrite:
-            val = int(val) & 0xFFFF # only 16 bits for some reason
-            #print("ExtClock Register {0:12} number {1:3} set to {2:5} = {2:#06x}".format(name,reg,val))
-            self.femb.write_reg(reg,val)
 
     def programFirmware(self, firmware):
         """
@@ -792,7 +245,9 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
             self.femb.write_reg(7, chn)      # CHN_select <= reg7_p(7-0)       
             time.sleep(0.01)
             data = self.femb_eh.get_data_packets(data_type = "int", num = packets, header = False)
-            
+            #data1 = self.femb.get_data(num = packets)
+            #print("normal: {} ".format(data[0:20]))
+            #print("new:    {} ".format(data1[0:20]))
             try:
                 if (k > 0):
                     print ("get_data_chipXchnX --> Now doing another test")
@@ -833,36 +288,52 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         for i in range (full_samples):
             if (chn == 7):
                 chn_data.append(data[(self.BPS*i)+1] & 0x0FFF)
+                #print("chn: {} val: {}".format(chn,chn_data))
             if (chn == 6):
                 chn_data.append(((data[(self.BPS*i)+2] & 0x00FF) << 4) + ((data[(self.BPS*i)+1] & 0xF000) >> 12))
+                #print("chn: {} val: {}".format(chn,chn_data))
             if (chn == 5):
                 chn_data.append(((data[(self.BPS*i)+3] & 0x000F) << 8) + ((data[(self.BPS*i)+2] & 0xFF00) >> 8))
+                #print("chn: {} val: {}".format(chn,chn_data))
             if (chn == 4):
                 chn_data.append(((data[(self.BPS*i)+3] & 0xFFF0) >> 4))
+                #print("chn: {} val: {}".format(chn,chn_data))
             if (chn == 3):
                 chn_data.append(data[(self.BPS*i)+4] & 0x0FFF)
+                #print("chn: {} val: {}".format(chn,chn_data))
             if (chn == 2):
                 chn_data.append(((data[(self.BPS*i)+5] & 0x00FF) << 4) + ((data[(self.BPS*i)+4] & 0xF000) >> 12))
+                #print("chn: {} val: {}".format(chn,chn_data))
             if (chn == 1):
                 chn_data.append(((data[(self.BPS*i)+6] & 0x000F) << 8) + ((data[(self.BPS*i)+5] & 0xFF00) >> 8))
+                #print("chn: {} val: {}".format(chn,chn_data))
             if (chn == 0):
                 chn_data.append(((data[(self.BPS*i)+6] & 0xFFF0) >> 4))
+                #print("chn: {} val: {}".format(chn,chn_data))
             if (chn == 15):
                 chn_data.append(data[(self.BPS*i)+7] & 0x0FFF)
+                #print("chn: {} val: {}".format(chn,chn_data))
             if (chn == 14):
                 chn_data.append(((data[(self.BPS*i)+8] & 0x00FF) << 4) + ((data[(self.BPS*i)+7] & 0xF000) >> 12))
+                #print("chn: {} val: {}".format(chn,chn_data))
             if (chn == 13):
                 chn_data.append(((data[(self.BPS*i)+9] & 0x000F) << 8) + ((data[(self.BPS*i)+8] & 0xFF00) >> 8))
+                #print("chn: {} val: {}".format(chn,chn_data))
             if (chn == 12):
                 chn_data.append(((data[(self.BPS*i)+9] & 0xFFF0) >> 4))
+                #print("chn: {} val: {}".format(chn,chn_data))
             if (chn == 11):
                 chn_data.append(data[(self.BPS*i)+10] & 0x0FFF)
+                #print("chn: {} val: {}".format(chn,chn_data))
             if (chn == 10):
                 chn_data.append(((data[(self.BPS*i)+11] & 0x00FF) << 4) + ((data[(self.BPS*i)+10] & 0xF000) >> 12))
+                #print("chn: {} val: {}".format(chn,chn_data))
             if (chn == 9):
                 chn_data.append(((data[(self.BPS*i)+12] & 0x000F) << 8) + ((data[(self.BPS*i)+11] & 0xFF00) >> 8))
+                #print("chn: {} val: {}".format(chn,chn_data))
             if (chn == 8):
                 chn_data.append(((data[(self.BPS*i)+12] & 0xFFF0) >> 4))
+                #print("chn: {} val: {}".format(chn,chn_data))
             if (chn == -1):
                 return (data)
             
@@ -930,13 +401,14 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         print ("FEMB_CONFIG--> ADC SYNC process failed for ADC # " + str(adc))
         return False
 
+
     def testUnsyncNew(self, adc):
         print("Starting testUnsync adc: ",adc)
         adcNum = int(adc)
         badSync = 0 #
         syncDicts = [{}]*16 #
         syncDataCounts = [{} for i in range(16)] # data for each channel
-        maxCodes = [None]*16
+
         if (adcNum < 0 ) or (adcNum > 3 ):
             print ("testUnsyncNew()--> asic number must be between 0 and 3")
             badSync = 1
@@ -1002,13 +474,14 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
 
         return badSync, syncDicts
 
+
     def FinalSyncCheck(self):
         print ("FEMB_CONFIG--> Final sync check to make sure")
         for a in range(0,self.NASICS,1):
             
             self.adc_reg_new.set_adc_global(chip = a, f5 = 1) # Test DATA
-            self.configAdcAsicNew(True)
-            
+            self.configAdcAsicNew(False)
+
             # quad board settings:
             #self.select_chip(chip = a)
             
@@ -1052,9 +525,15 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
             if (badSync == 1):
                 self.femb.write_reg(9, 1)
                 sys.exit("FEMB_CONFIG--> Sync failed in the final check")                
-                
-        self.adc_reg_new.set_adc_global(chip = a, f5 = 0) # Adc DATA
+
+        
+        self.femb.write_reg(14,0)
+        self.adc_reg_new.set_adc_global(chip = a, clk = 2, frqc = 1, en_gr = 0, slsb = 0, f0 = 0, f1 = 0, f2 = 0, f3 = 0, f4 = 0, f5 = 0) # f5 = 0 (Adc DATA)
+
+        #self.adc_reg.set_sbnd_board(en_gr=0,d=0,tstin=1,frqc=1,slp=0,pdsr=0,pcsr=1,clk0=0,clk1=0,f0=0,f1=0,f2=0,f3=0,f4=0,f5=0,slsb=0)
         self.configAdcAsicNew(True)
+
+
         for j in range(100):    #reset sync error
             self.femb_eh.write_reg(11, 1) # ERROR_RESET <= reg11_p(0)
             time.sleep(0.01)
@@ -1087,6 +566,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
 
     def configAdcAsicNew(self, to_print = True): #cp 1/29/18 #helper
         Adcasic_regs = self.adc_reg_new.REGS
+        #Adcasic_regs = self.adc_reg.REGS
         #ADC ASIC SPI registers
         self.femb.write_reg ( self.REG_ASIC_SPIPROG, 0x40)
         self.femb.write_reg ( self.REG_ASIC_SPIPROG, 0)
@@ -1116,7 +596,6 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
             time.sleep(.05)
             self.femb.write_reg ( self.REG_ASIC_SPIPROG, 1)
             time.sleep(.05)
-           #self.femb.write_reg ( self.REG_ASIC_SPIPROG, 0)
 
 
             if (to_print == True): # Print to screen
@@ -1126,7 +605,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
             i = 0
             for regNum in range(self.REG_ADCSPI_RDBACK_BASE,self.REG_ADCSPI_RDBACK_BASE+len(Adcasic_regs),1):
                 readback_regs.append(self.femb.read_reg(regNum))
-                #print ( "femb_config_sbnd.py -> configAdcAsicNew() -> readback reg: " + str(hex(regNum)) + " from base: " + str(hex(Adcasic_regs[i])))
+                print("configAdcAsicNew() -> rb reg: {:#010x} from base: {:#010x}".format(regNum, Adcasic_regs[i]))
                 i = i + 1
             
             i=0
@@ -1135,7 +614,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
                     print ("\t FEMB_CONFIG --> CONFIG() ERROR -> configAdcAsicNew() -> Sent Adcasic_reg not correct = " + str(hex(Adcasic_regs[i])) + " , rb_reg = " + str(hex(readback_regs[i])) )
                 else:
                     continue
-                    #print ("femb_config_sbnd.py -> configAdcAsicNew() -> Adcasic_reg correct = " + str(hex(Adcasic_regs[i])) + " , rb_reg = " + str(hex(readback_regs[i])) )
+                    print ("femb_config_sbnd.py -> configAdcAsicNew() -> Adcasic_reg correct = " + str(hex(Adcasic_regs[i])) + " , rb_reg = " + str(hex(readback_regs[i])) )
             
 #            val = self.femb.read_reg ( self.REG_ASIC_SPIPROG ) 
             wrong = False
@@ -1185,6 +664,37 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         print ("FEMB_CONFIG--> Final Latch latency " + str(hex(latchloc1_4)))
         print ("FEMB_CONFIG--> Final Phase Shift " +   str(hex(clkphase)))
         print ("FEMB_CONFIG--> ADC passed Sync Test!")
+        clock = 1./self.FPGA_FREQ_MHZ * 1000. # clock now in ns
+        mult = 1
+        denominator = clock/mult
+        cl1 = self.EC_RST_OFF // denominator
+        cl2 = self.EC_RST_WID // denominator
+        cl3 = self.EC_RD_OFF // denominator
+        cl4 = self.EC_RD_WID // denominator
+        cl5 = self.EC_IDXM_OFF // denominator
+        cl6 = self.EC_IDXM_WID // denominator
+        cl7 = self.EC_IDXL_OFF // denominator
+        cl8 = self.EC_IDXL_WID // denominator
+        cl9 = self.EC_IDL1_OFF // denominator
+        cl10 = self.EC_IDL1_WID // denominator
+        cl11 = self.EC_IDL2_OFF // denominator
+        cl12 = self.EC_IDL2_WID // denominator
+        print("INV CLK: {}".format(self.femb_eh.read_reg(21)))
+        print("RSET CLK OFF: {} v {}".format(self.femb_eh.read_reg(22), cl1))
+        print("RSET CLK WID: {} v {}".format(self.femb_eh.read_reg(23), cl2))
+        print("READ CLK OFF: {} v {}".format(self.femb_eh.read_reg(24), cl3))
+        print("READ CLK WID: {} v {}".format(self.femb_eh.read_reg(25), cl4))
+        print("IDXM CLK OFF : {} v {}".format(self.femb_eh.read_reg(26), cl5))
+        print("IDXM CLK WID: {} v {}".format(self.femb_eh.read_reg(27), cl6))
+        print("IDXL CLK OFF: {} v {}".format(self.femb_eh.read_reg(28), cl7))
+        print("IDXL CLK WID: {} v {}".format(self.femb_eh.read_reg(29), cl8))
+        print("IDL1 CLK OFF: {} v {}".format(self.femb_eh.read_reg(30), cl9))
+        print("IDL1 CLK WID: {} v {}".format(self.femb_eh.read_reg(31), cl10))
+        print("IDL2 CLK OFF: {} v {}".format(self.femb_eh.read_reg(32), cl11))
+        print("IDL2 CLK WID: {} v {}".format(self.femb_eh.read_reg(33), cl12))
+        print("STEP0: {}".format(self.femb_eh.read_reg(34)))
+        print("STEP1: {}".format(self.femb_eh.read_reg(35)))
+        print("STEP2: {}".format(self.femb_eh.read_reg(36)))
 
         return not alreadySynced,latchloc1_4,clkphase 
 
@@ -1251,36 +761,69 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
             inv += 1 << 3
         if self.inv_idl:      #INV_IDL
             inv += 1 << 4
-        if self.inv_clk_dis:  #INV_CLK_DIS
-            inv += 1 << 5
-        self.femb.write_reg(21, inv)
-        self.femb.write_reg(22, self.EC_RST_OFF)   # RESET Offset      
-        self.femb.write_reg(23, self.EC_RST_WID)   # RESET Width
-        self.femb.write_reg(24, self.EC_RD_OFF)    # READ Offset
-        self.femb.write_reg(25, self.EC_RD_WID)    # READ Width
-        self.femb.write_reg(26, self.EC_IDXM_OFF)  # IDXM Offset
-        self.femb.write_reg(27, self.EC_IDXM_WID)  # IDXM Width        
-        self.femb.write_reg(28, self.EC_IDXL_OFF)  # IDXL Offset
-        self.femb.write_reg(29, self.EC_IDXL_WID)  # IDXL Width
-        self.femb.write_reg(30, self.EC_IDL1_OFF)  # IDL1 Offset
-        self.femb.write_reg(31, self.EC_IDL1_WID)  # IDL1 Width         
-        self.femb.write_reg(32, self.EC_IDL2_OFF)  # IDL2 Offset
-        self.femb.write_reg(33, self.EC_IDL2_WID)  # IDL2 Width
+        #if self.inv_clk_dis:  #INV_CLK_DIS
+        #    inv += 1 << 5
+
+        clock = 1./ self.FPGA_FREQ_MHZ * 1000. # clock now in ns (5*10^(-9))
+        mult = 1
+        denominator = clock/mult
+        cl1 = self.EC_RST_OFF // denominator
+        cl2 = self.EC_RST_WID // denominator
+        cl3 = self.EC_RD_OFF // denominator
+        cl4 = self.EC_RD_WID // denominator
+        cl5 = self.EC_IDXM_OFF // denominator
+        cl6 = self.EC_IDXM_WID // denominator
+        cl7 = self.EC_IDXL_OFF // denominator
+        cl8 = self.EC_IDXL_WID // denominator
+        cl9 = self.EC_IDL1_OFF // denominator
+        cl10 = self.EC_IDL1_WID // denominator
+        cl11 = self.EC_IDL2_OFF // denominator
+        cl12 = self.EC_IDL2_WID // denominator
+
+        print("set RSET CLK OFF: {}".format(cl1))
+        print("set RSET CLK WID: {}".format(cl2))
+        print("set READ CLK OFF: {}".format(cl3))
+        print("set READ CLK WID: {}".format(cl4))
+        print("set IDXM CLK OFF: {}".format(cl5))
+        print("set IDXM CLK WID: {}".format(cl6))
+        print("set IDXL CLK OFF: {}".format(cl7))
+        print("set IDXL CLK WID: {}".format(cl8))
+        print("set IDL1 CLK OFF: {}".format(cl9))
+        print("set IDL1 CLK WID: {}".format(cl10))
+        print("set IDL2 CLK OFF: {}".format(cl11))
+        print("set IDL2 CLK WID: {}".format(cl12))
+
+        self.femb_eh.write_reg(21, inv)
+        self.femb_eh.write_reg(14, 0) #set 200MHz adc clock      
+        #int(val) & 0xFFFF ??
+        self.femb_eh.write_reg(22, cl1)#self.EC_RST_OFF)   # RESET Offset      
+        self.femb_eh.write_reg(23, cl2)#self.EC_RST_WID)   # RESET Width
+        self.femb_eh.write_reg(24, cl3)#self.EC_RD_OFF)    # READ Offset
+        self.femb_eh.write_reg(25, cl4)#self.EC_RD_WID)    # READ Width
+        self.femb_eh.write_reg(26, cl5)#self.EC_IDXM_OFF)  # IDXM Offset
+        self.femb_eh.write_reg(27, cl6)#self.EC_IDXM_WID)  # IDXM Width        
+        self.femb_eh.write_reg(28, cl7)#self.EC_IDXL_OFF)  # IDXL Offset
+        self.femb_eh.write_reg(29, cl8)#self.EC_IDXL_WID)  # IDXL Width
+        self.femb_eh.write_reg(30, cl9)#self.EC_IDL1_OFF)  # IDL1 Offset
+        self.femb_eh.write_reg(31, cl10)#self.EC_IDL1_WID)  # IDL1 Width         
+        self.femb_eh.write_reg(32, cl11)#self.EC_IDL2_OFF)  # IDL2 Offset
+        self.femb_eh.write_reg(33, cl12)#self.EC_IDL2_WID)  # IDL2 Width
         #Fine Control
-        self.femb.write_reg(34, self.EC_PLL_STEP0) # C0 & C1 fine clock settings   
-        self.femb.write_reg(35, self.EC_PLL_STEP1) # C2 & C3 fine clock settings
-        self.femb.write_reg(36, self.EC_PLL_STEP2) # C2 & C3 fine clock settings
+        self.femb_eh.write_reg(34, self.EC_PLL_STEP0) # C0 & C1 fine clock settings   
+        self.femb_eh.write_reg(35, self.EC_PLL_STEP1) # C2 & C3 fine clock settings
+        self.femb_eh.write_reg(36, self.EC_PLL_STEP2) # C2 & C3 fine clock settings
 
         #set default value to FEMB ADCs
         #clk = 2 is external
         #clk = 0 is internal
-        self.adc_reg_new.set_adc_board( d=0, pcsr=0, pdsr=0, slp=0, tstin=1,
+        self.adc_reg_new.set_adc_board( d=6, pcsr=1, pdsr=0, slp=0, tstin=1,
                  clk = 0, frqc = 1, en_gr = 0, f0 = 0, f1 = 0, 
                  f2 = 0, f3 = 0, f4 = 0, f5 = 1, slsb = 0) # set to internal 1/31/18 cp
                  
         self.femb.write_reg( self.REG_ASIC_SPIPROG, 0x30)
         self.femb.write_reg( self.REG_ASIC_SPIPROG, 0)
-        self.configAdcAsicNew(True)
-        
+        self.configAdcAsicNew(False)
+      
+
 
 
