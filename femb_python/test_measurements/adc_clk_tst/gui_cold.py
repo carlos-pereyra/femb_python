@@ -26,11 +26,11 @@ import traceback
 
 #import the test module
 import femb_python
-from ...configuration import CONFIG
-from ...runpolicy import DirectRunner, SumatraRunner
-from ...trace_fft_window import TRACE_FFT_WINDOW
-from ...trace_allchan_window import TRACE_ALLCHAN_WINDOW
-from ...helper_scripts.show_trace_root import TRACE_ROOT_WINDOW, FFT_ROOT_WINDOW
+from femb_python.configuration import CONFIG
+from femb_python.runpolicy import DirectRunner, SumatraRunner
+from femb_python.trace_fft_window import TRACE_FFT_WINDOW
+from femb_python.trace_allchan_window import TRACE_ALLCHAN_WINDOW
+from femb_python.helper_scripts.show_trace_root import TRACE_ROOT_WINDOW, FFT_ROOT_WINDOW
 
 GUITESTMODE=False
 
@@ -356,11 +356,11 @@ class GUI_WINDOW(Frame):
 
         self.update_idletasks()
         runnerSetup = {
-                                "executable": "femb_adc_setup_board",
+                                "executable": "femb_adc_setup_board_A01",
                                 "argstr": "-j {paramfile}",
                                 "basedir": self.data_base_dir,
                                 "rundir": "/home/{linux_username}/run",
-                                "datadir": "{basedir}/{linux_username}/adcasic/{femb_config_name}/{timestamp}",
+                                "datadir": "{basedir}/{linux_username}/adcasic_A01/{femb_config_name}/{timestamp}",
                                 "paramfile": "{datadir}/setup_params_try{iTry}.json",
                                 "outfilename": "{datadir}/adcSetup_{timestamp}_try{iTry}.json",
                                 "smtname": "adc",
@@ -433,7 +433,7 @@ class GUI_WINDOW(Frame):
                                 "argstr": "-j {paramfile}",
                                 "basedir": self.data_base_dir,
                                 "rundir": "/home/{linux_username}/run",
-                                "datadir": "{basedir}/{linux_username}/adcasic/{femb_config_name}/{timestamp}",
+                                "datadir": "{basedir}/{linux_username}/adcasic_A01/{femb_config_name}/{timestamp}",
                                 "paramfile": "{datadir}/david_adams_only_params_try{iTry}.json",
                                 "smtname": "adc",
                                 "smttag": "{hostname}",
@@ -548,7 +548,7 @@ class GUI_WINDOW(Frame):
             else:
                 resultdict = {"pass":True}
                 #resultdict = {"pass":False}
-        print("done_preparing_board result:")
+        #print("done_preparing_board result:")
         pprint.pprint(resultdict)
         titles_made = False
         testNames = None
@@ -632,7 +632,7 @@ class GUI_WINDOW(Frame):
             titles_made = True
 
         anyPass = False
-        for chipPass in resultdict["pass"]:
+        for chipPass in resultdict["sync"]: #dont use "pass", instead use "sync"
             if chipPass:
                 anyPass = True
                 break
@@ -895,7 +895,7 @@ class GUI_WINDOW(Frame):
         self.master.destroy()
 
 def main():
-    from ...configuration.argument_parser import ArgumentParser
+    from femb_python.configuration.argument_parser import ArgumentParser
 
     parser = ArgumentParser(description="ADC cold test GUI")
     parser.add_argument("-l","--forceLong",help="Force to run over all ADC offset current settings (normally doesn't)",action="store_true")
@@ -907,3 +907,7 @@ def main():
     root.title("ADC Cold Test GUI")
     window = GUI_WINDOW(root,forceLong=args.forceLong)
     root.mainloop() 
+
+if __name__ == '__main__':
+    main()
+
