@@ -12,6 +12,7 @@ import ROOT
 #from ROOT import TFile, TTree
 from array import array
 from .femb_udp import FEMB_UDP
+from femb_python.test_measurements.adc_clk_tst.femb_udp_cmdline import FPGA_UDP
 import uuid
 import datetime
 import time
@@ -19,7 +20,7 @@ import sys
 
 class WRITE_ROOT_TREE(object):
 
-    def __init__(self,femb_config,iChip,filename,numpacketsrecord,highSpeed=False,packedHighSpeed=False):
+    def __init__(self,femb_config,iChip,filename,numpacketsrecord,highSpeed=False,packedHighSpeed=True):
     #data taking variables
         if iChip >= femb_config.NASICS:
             print("Error WRITE_ROOT_TREE: iChip >= NASICS")
@@ -59,6 +60,7 @@ class WRITE_ROOT_TREE(object):
         self.funcAmp = 0.
         #initialize FEMB UDP object
         self.femb = FEMB_UDP()
+        self.femb_eh = FPGA_UDP()
         self.femb_config = femb_config
 
     def record_data_run(self):
@@ -74,17 +76,27 @@ class WRITE_ROOT_TREE(object):
         if self.highSpeed:
             self.femb_config.selectChannel( self.iChip, 0, hsmode=0) # all channels at once
             time.sleep(0.01)
-            data = self.femb.get_data(npackets)
+            data = self.femb_eh.get_data_packets(data_type = "int", num = 40, header = False)
+            #data = self.femb.get_data(npackets)
+            """
+            if(self.femb_config.FIRMWAREVERSION == "A01"):
+                data = self.femb_eh.get_data_packets(data_type = "int", num = 40, header = False)
+            else:
+                data = self.femb.get_data(npackets)
+            """
             for ch in range(16):
                 chan[0] = int(ch)
                 wf.clear()
                 samples = None
+                samples = self.convertHighSpeedPacked(data)
+                """
                 if self.packedHighSpeed:
                     samples = self.convertHighSpeedSimple(data)
                 else:
                     samples = self.convertHighSpeedPacked(data)
                 for samp in samples[ch]:
                     wf.push_back( samp )
+                """
                 t.Fill()
         else:
             for ch in range(16):
@@ -95,7 +107,8 @@ class WRITE_ROOT_TREE(object):
                     self.femb_config.selectChannel( self.iChip, ch, hsmode=1)
                 time.sleep(0.01)
                 wf.clear()
-                data = self.femb.get_data(npackets)
+                data = self.femb_eh.get_data_packets(data_type = "int", num = 100, header = False)
+                #data = self.femb.get_data(npackets)
                 for samp in data:
                     chNum = ((samp >> 12 ) & 0xF)
                     sampVal = (samp & 0xFFF)

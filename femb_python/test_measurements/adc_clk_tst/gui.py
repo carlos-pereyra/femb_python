@@ -262,7 +262,7 @@ class GUI_WINDOW(Frame):
 
         self.update_idletasks()
         runnerSetup = {
-                                "executable": "femb_adc_setup_board",
+                                "executable": "femb_adc_setup_board_A01",
                                 "argstr": "-j {paramfile}",
                                 "basedir": self.data_base_dir,
                                 "rundir": "/home/{linux_username}/run",
@@ -308,7 +308,7 @@ class GUI_WINDOW(Frame):
         self.update_idletasks()
 
         runnerSetup = {
-                                "executable": "femb_adc_run",
+                                "executable": "femb_adc_run_A01",
                                 "argstr": "-j {paramfile}",
                                 "basedir": self.data_base_dir,
                                 "rundir": "/home/{linux_username}/run",

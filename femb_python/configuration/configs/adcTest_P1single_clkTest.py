@@ -126,6 +126,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         self.BPS = 13 #Bytes per sample
 
         ## Firmware update related variables
+        self.FIRMWAREVERSION = "A01"
         self.FIRMWAREPATH2MHZ = "/home/oper/Documents/CarlosForkedRepo/femb_python/femb_python/test_measurements/adc_clk_tst/S_SKT_ADC_CHP_TST.sof"
         self.FIRMWAREPATH1MHZ = "/home/oper/Documents/CarlosForkedRepo/femb_python/femb_python/test_measurements/adc_clk_tst/S_SKT_ADC_CHP_TST.sof"
         self.FIRMWAREPROGEXE = "/opt/sw/intelFPGA/17.0/qprogrammer/bin/quartus_pgm"

@@ -59,7 +59,8 @@ def setup_board(config,outfilename,adcSerialNumbers,startDateTime,operator,board
         time.sleep(1)
         config.femb_eh.init_ports(config.PC_IP, config.FPGA_IP)
         config.resetBoardNew()
-        reg2 = config.femb.read_reg(1)
+        #config.femb.write_reg(1,0)
+        reg2 = config.femb_eh.read_reg(1)
         if reg2 is None:
             print("Board/chip Failure: couldn't read a register.")
             result["readReg"] = False;

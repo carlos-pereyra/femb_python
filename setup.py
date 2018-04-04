@@ -211,6 +211,7 @@ setup(
             #ADC ASIC - single socket clock testing
             #'adc_clk_optimize=femb_python.test_measurements.adc_clock_test.run:main',
             'femb_adc_setup_board_A01=femb_python.test_measurements.adc_clk_tst.setup_board:main',
+            'femb_adc_run_david_adams_only_A01=femb_python.test_measurements.adc_clk_tst.run_david_adams_only:main',
 
             #what the shifters run:
             'femb_osctest=femb_python.test_measurements.OscillatorTesting.otmain:main',

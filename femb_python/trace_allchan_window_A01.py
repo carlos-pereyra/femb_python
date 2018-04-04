@@ -49,7 +49,7 @@ class TRACE_ALLCHAN_WINDOW(Tk.Frame):
   This window displays a live ADC redout
   """
   
-  def __init__(self, master=None, packedHighSpeed=True):
+  def __init__(self, master=None, packedHighSpeed=False):
     self.maxtraces = 5
     self.selChan = 0
 
@@ -179,8 +179,8 @@ class TRACE_ALLCHAN_WINDOW(Tk.Frame):
     data = None
     timestamp = None
     if iTrace is None:
-        #data = self.femb.get_data(num = 100)
-        data = self.femb_eh.get_data_packets(data_type = "int", num = 100, header = False)
+        #data = self.femb.get_data(100)
+        data = self.femb_eh.get_data_packets(data_type = "int", num = 1, header = False)
         timestamp = datetime.datetime.now()
         self.traces.append(data)
         self.timestamps.append(timestamp)
@@ -196,14 +196,18 @@ class TRACE_ALLCHAN_WINDOW(Tk.Frame):
     if len(data ) == 0:
         return None, None, None, None, None
 
-    chSamples = None
-    chSamples = WRITE_ROOT_TREE.convertHighSpeedPacked(None, data)
+    # something wrong is happening within WRITE_ROOT_TREE...
+    #chSamples = None
+    chSamples = []
     """
     if self.packedHighSpeed:
       chSamples = WRITE_ROOT_TREE.convertHighSpeedPacked(None, data)
     else:
       chSamples = WRITE_ROOT_TREE.convertHighSpeedSimple(None, data)
     """
+
+    chSamples = WRITE_ROOT_TREE.convertHighSpeedPacked(None, data)
+
     xpoint = []
     ypoint = []
     num = 0
