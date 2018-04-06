@@ -5,7 +5,7 @@ from __future__ import absolute_import
 from builtins import range
 from future import standard_library
 standard_library.install_aliases()
-from ...femb_udp import FEMB_UDP
+#from ...femb_udp import FEMB_UDP
 from ...test_instrument_interface import RigolDG4000
 from ...write_root_tree import WRITE_ROOT_TREE
 import sys
@@ -54,9 +54,9 @@ def resetBoardAndProgramFirmware(config,sampleRate):
                     print("Error: Sample rate not 1 MHz or 2 MHz: ",sampleRate)
                     continue
                 programFunc()
-                config.resetBoard()
-                config.initBoard()
-                config.syncADC()
+                config.resetBoardNew()
+                config.initBoardNew()
+                config.syncADCNew()
             except FEMBConfigError as e:
                 sys.stdout.flush()
                 sys.stderr.flush()
@@ -76,7 +76,7 @@ def resetBoardAndProgramFirmware(config,sampleRate):
         config.POWERSUPPLYINTER.off()
         time.sleep(0.5)
         config.POWERSUPPLYINTER.on()
-        time.sleep(0.5)
+        time.sleep(5)
     print("Unable to reset/init/sync/firmware.")
     return False
 
@@ -109,10 +109,12 @@ def configAdcAsic(config,sampleRate,offsetCurrent=None,
         config.POWERSUPPLYINTER.off()
         time.sleep(0.5)
         config.POWERSUPPLYINTER.on()
-        time.sleep(0.5)
+        time.sleep(2)
         resetSuccess = resetBoardAndProgramFirmware(config,sampleRate)
         if not resetSuccess:
             return False
+        else:
+            print("\nresetBoardAndProgramFirmware is Success\n")
     print("Unable to configAdcAsic.")
     return False
 
@@ -141,7 +143,7 @@ def runTests(config,dataDir,adcSerialNumbers,startDateTime,operator,board_id,hos
     baseline_rms = BASELINE_RMS()
     dc_tests = DC_TESTS(config)
 
-    sampleRates = [2000000,1000000]
+    sampleRates = [2000000] #,1000000]
     clocks = [0,1] # -1 undefined, 0 external, 1 internal monostable, 2 internal FIFO
     offsets = range(-1,16)
     if quick:
@@ -181,7 +183,10 @@ def runTests(config,dataDir,adcSerialNumbers,startDateTime,operator,board_id,hos
                 configSuccess = configAdcAsic(config,sampleRate,
                             offsetCurrent=offset,
                             clockMonostable=clockMonostable,clockFromFIFO=clockFromFIFO,
-                            clockExternal=clockExternal,testInput=1)
+                            clockExternal=clockExternal,testInput=1) #edit
+
+
+
                 if not configSuccess:
                     continue
                 longRamp = (clock == 0 and offset == -1)

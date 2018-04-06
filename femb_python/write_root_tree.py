@@ -9,7 +9,7 @@ standard_library.install_aliases()
 from builtins import object
 import string
 import ROOT
-#from ROOT import TFile, TTree
+from ROOT import TFile, TTree
 from array import array
 from .femb_udp import FEMB_UDP
 from femb_python.test_measurements.adc_clk_tst.femb_udp_cmdline import FPGA_UDP
@@ -76,7 +76,8 @@ class WRITE_ROOT_TREE(object):
         if self.highSpeed:
             self.femb_config.selectChannel( self.iChip, 0, hsmode=0) # all channels at once
             time.sleep(0.01)
-            data = self.femb_eh.get_data_packets(data_type = "int", num = 40, header = False)
+            data = self.femb_eh.get_data_packets(data_type = "int", num = 100, header = False)
+            print("ehhh {}", data[0])
             #data = self.femb.get_data(npackets)
             """
             if(self.femb_config.FIRMWAREVERSION == "A01"):
@@ -89,14 +90,8 @@ class WRITE_ROOT_TREE(object):
                 wf.clear()
                 samples = None
                 samples = self.convertHighSpeedPacked(data)
-                """
-                if self.packedHighSpeed:
-                    samples = self.convertHighSpeedSimple(data)
-                else:
-                    samples = self.convertHighSpeedPacked(data)
                 for samp in samples[ch]:
                     wf.push_back( samp )
-                """
                 t.Fill()
         else:
             for ch in range(16):
@@ -107,12 +102,18 @@ class WRITE_ROOT_TREE(object):
                     self.femb_config.selectChannel( self.iChip, ch, hsmode=1)
                 time.sleep(0.01)
                 wf.clear()
-                data = self.femb_eh.get_data_packets(data_type = "int", num = 100, header = False)
-                #data = self.femb.get_data(npackets)
-                for samp in data:
-                    chNum = ((samp >> 12 ) & 0xF)
-                    sampVal = (samp & 0xFFF)
-                    wf.push_back( sampVal )
+                if(self.femb_config.FIRMWAREVERSION == "A01"):
+                    data = self.femb_eh.get_data_packets(data_type = "int", num = 3000, header = False)
+                    samples = self.convertHighSpeedPacked(data)
+                    for samp in samples[ch]:
+                        wf.push_back( samp )
+                else:
+                    data = self.femb.get_data(npackets)
+                    for samp in data:
+                        chNum = ((samp >> 12 ) & 0xF)
+                        sampVal = (samp & 0xFFF)
+                        wf.push_back( sampVal )
+                
                 t.Fill()
 
         #define metadata

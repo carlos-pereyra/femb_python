@@ -65,8 +65,8 @@ def runTests(config,dataDir,adcSerialNumbers,startDateTime,operator,board_id,hos
             continue
 
 def main():
-    from ...configuration.argument_parser import ArgumentParser
-    from ...configuration import CONFIG
+    from femb_python.configuration.argument_parser import ArgumentParser
+    from femb_python.configuration import CONFIG
     import json
 
     ROOT.gROOT.SetBatch(True)

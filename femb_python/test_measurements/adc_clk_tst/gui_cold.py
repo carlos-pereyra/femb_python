@@ -59,7 +59,7 @@ class GUI_WINDOW(Frame):
 
         self.master.protocol("WM_DELETE_WINDOW", self.exit)
 
-        self.data_base_dir = "/dsk/1/data"
+        self.data_base_dir = "/dsk/1/tmp" #changed from data -> tmp
         try:
             self.data_base_dir = os.environ["FEMB_DATA_DIR"]
         except KeyError:
@@ -370,8 +370,8 @@ class GUI_WINDOW(Frame):
                                 "iTry": self.iTry_configure,
                             }
         self.iTry_configure += 1
-        #runner = DirectRunner(**runnerSetup)
-        runner = SumatraRunner(**runnerSetup)
+        runner = DirectRunner(**runnerSetup)
+        #runner = SumatraRunner(**runnerSetup)
         try:
             if GUITESTMODE:
                 params = runner.resolve(**inputOptions) # use to test GUI w/o running test
@@ -429,7 +429,7 @@ class GUI_WINDOW(Frame):
         self.update_idletasks()
 
         runnerSetup = {
-                                "executable": "femb_adc_run_david_adams_only",
+                                "executable": "femb_adc_run_david_adams_only_A01",
                                 "argstr": "-j {paramfile}",
                                 "basedir": self.data_base_dir,
                                 "rundir": "/home/{linux_username}/run",
@@ -440,7 +440,9 @@ class GUI_WINDOW(Frame):
                                 "iTry": self.iTry_david_adams,
                             }
         self.iTry_david_adams += 1
-        runner = SumatraRunner(**runnerSetup)
+
+        runner = DirectRunner(**runnerSetup)
+        #runner = SumatraRunner(**runnerSetup)
         try:
             if GUITESTMODE:
                 params = runner.resolve(**inputOptions) # use to test GUI w/o running test
@@ -495,7 +497,7 @@ class GUI_WINDOW(Frame):
         self.update_idletasks()
 
         runnerSetup = {
-                                "executable": "femb_adc_run",
+                                "executable": "femb_adc_run_A01",
                                 "argstr": "-j {paramfile}",
                                 "basedir": self.data_base_dir,
                                 "rundir": "/home/{linux_username}/run",
@@ -506,8 +508,8 @@ class GUI_WINDOW(Frame):
                                 "nTries_david_adams_only": self.iTry_david_adams-1,
                                 "nTries_configure": self.iTry_configure-1,
                             }
-        #runner = DirectRunner(**runnerSetup)
-        runner = SumatraRunner(**runnerSetup)
+        runner = DirectRunner(**runnerSetup)
+        #runner = SumatraRunner(**runnerSetup)
         try:
             if GUITESTMODE:
                 params = runner.resolve(**inputOptions) # use to test GUI w/o running test
