@@ -50,13 +50,10 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         """
         self.REG_LATCHLOC1_4_data_warm = 0x6060604 # 
         self.REG_CLKPHASE_data_warm = 0xfffc0000
-
         self.REG_LATCHLOC1_4_data_1MHz_warm = 0x6060604
         self.REG_CLKPHASE_data_1MHz_warm = 0xffff0000
-
         self.REG_LATCHLOC1_4_data_cold = 0x6060604
         self.REG_CLKPHASE_data_cold = 0xfffc0000
-
         self.REG_LATCHLOC1_4_data_1MHz_cold = 0x6060604
         self.REG_CLKPHASE_data_1MHz_cold = 0xfffc0001
         """
@@ -95,15 +92,15 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         self.EC_RD_OFF = 470
         self.EC_RD_WID = 15
         self.EC_IDXM_OFF = 220
-        self.EC_IDXM_WID = 270 #270
+        self.EC_IDXM_WID = 265 #270
         self.EC_IDXL_OFF = 470
         self.EC_IDXL_WID = 15
-        self.EC_IDL1_OFF = 40
+        self.EC_IDL1_OFF = 35 #40
         self.EC_IDL1_WID = 185
         self.EC_IDL2_OFF = 465
         self.EC_IDL2_WID = 15
-        self.EC_PLL_STEP0 =  0x000b000f # found in labview
-        self.EC_PLL_STEP1 =  0x000e0008 # found in labview
+        self.EC_PLL_STEP0 =  0x0014000D #0x000b000f # found in labview
+        self.EC_PLL_STEP1 =  0x00060012 #0x000e0008 # found in labview
         self.EC_PLL_STEP2 =  0x80190009 # found in labview
         self.inv_rst=True
         self.inv_read=False
@@ -539,7 +536,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         # f3     # 0 IDL delayed 5-10 ns, 1 IDL delay one clk cycle
         # f4     # 
         # f5     # 0 adc data, 1 test data
-        self.adc_reg_new.set_adc_board(chip = a, clk = 0, frqc = 1, en_gr = 0, slsb = 0, f0 = 0, f1 = 0, f2 = 0, f3 = 0, f4 = 0, f5 = 0)
+        self.adc_reg_new.set_adc_chip(chip = a, d = 6, pcsr=1, pdsr=0, slp=0, tstin=1, clk = 2, frqc = 1, f4 = 0, f5 = 0)
         self.configAdcAsicNew(True)
 
 
@@ -572,79 +569,11 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
                 self.configAdcAsicNew(False)
                 #print ("Loop {}".format(j))
 
-    def configAdcAsicRegNew(self,enableOffsetCurrent=None,offsetCurrent=None,testInput=None,
+    def configAdcAsicNew(self, to_print = True, enableOffsetCurrent=None,offsetCurrent=None,testInput=None,
                             freqInternal=None,sleep=None,pdsr=None,pcsr=None,
                             clockMonostable=None,clockExternal=None,clockFromFIFO=None,
                             sLSB=None,f0=None,f1=None,f2=None,f3=None,f4=None,f5=None):
-        """
-        Configure ADCs
-          enableOffsetCurrent: 0 disable offset current, 1 enable offset current
-          offsetCurrent: 0-15, amount of current to draw from sample and hold
-          testInput: 0 digitize normal input, 1 digitize test input
-          freqInternal: internal clock frequency: 0 1MHz, 1 2MHz
-          sleep: 0 disable sleep mode, 1 enable sleep mode
-          pdsr: if pcsr=0: 0 PD is low, 1 PD is high
-          pcsr: 0 power down controlled by pdsr, 1 power down controlled externally
-          Only one of these can be enabled:
-            clockMonostable: True ADC uses monostable clock
-            clockExternal: True ADC uses external clock
-            clockFromFIFO: True ADC uses digital generator FIFO clock
-          sLSB: LSB current steering mode. 0 for full, 1 for partial (ADC7 P1)
-          f0, f1, f2, f3, f4, f5: version specific
-        """
-        FEMB_CONFIG_BASE.configAdcAsic(self,clockMonostable=clockMonostable,
-                                        clockExternal=clockExternal,clockFromFIFO=clockFromFIFO)
-        if enableOffsetCurrent is None:
-            enableOffsetCurrent=0
-        if offsetCurrent is None:
-            offsetCurrent=0
-        else:
-            offsetCurrent = int("{:04b}".format(offsetCurrent)[::-1],2) # need to reverse bits, use string/list tricks
-        if testInput is None:
-            testInput=1
-        if freqInternal is None:
-            freqInternal=1
-        if sleep is None:
-            sleep=0
-        if pdsr is None:
-            pdsr=0
-        if pcsr is None:
-            pcsr=0
-        if sLSB is None:
-            sLSB = 0
-        if f1 is None:
-            f1 = 0
-        if f2 is None:
-            f2 = 0
-        if f3 is None:
-            f3 = 0
-        if f4 is None:
-            f4 = 1
-        if f5 is None:
-            f5 = 0
-        if not (clockMonostable or clockExternal or clockFromFIFO):
-            clockExternal=True
-        # a bunch of things depend on the clock choice
-        clk0=0
-        clk1=0
-        if clockExternal:
-            clk0=1
-            clk1=0
-        elif clockFromFIFO:
-            clk0=0
-            clk1=1
-        if f0 is None:
-            if clockExternal:
-                f0 = 2
-            else:
-                f0 = 0
 
-        self.adc_reg.set_sbnd_board(en_gr=enableOffsetCurrent,d=offsetCurrent,tstin=testInput,frqc=freqInternal,slp=sleep,pdsr=pdsr,pcsr=pcsr,clk0=clk0,clk1=clk1,f0=f0,f1=f1,f2=f2,f3=f3,f4=f4,f5=f5,slsb=sLSB)
-
-        self.adc_reg_new.set_adc_board(chip = a, clk = 0, frqc = 1, en_gr = 0, slsb = 0, f0 = 0, f1 = 0, f2 = 0, f3 = 0, f4 = 0, f5 = 0)
-        self.configAdcAsicNew(True)
-
-    def configAdcAsicNew(self, to_print = True): #cp 1/29/18 #helper
         Adcasic_regs = self.adc_reg_new.REGS
         #Adcasic_regs = self.adc_reg.REGS
         #ADC ASIC SPI registers
@@ -657,6 +586,60 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         self.femb.write_reg ( self.REG_ASIC_SPIPROG, 0x40)
         self.femb.write_reg ( self.REG_ASIC_SPIPROG, 0)
         time.sleep(0.01)
+
+        """
+        % ADC ASIC CUSTOMIZATION
+        """
+        if enableOffsetCurrent is None:
+            enableOffsetCurrent=0
+        if offsetCurrent is None:
+            offsetCurrent=0
+        else:
+            offsetCurrent = int("{:04b}".format(offsetCurrent)[::-1],2) # need to reverse bits, use string/list tricks
+        if testInput is None:
+            testInput=-1
+        if freqInternal is None:
+            freqInternal=-1
+        if sleep is None:
+            sleep=-1
+        if pdsr is None:
+            pdsr=-1
+        if pcsr is None:
+            pcsr=-1
+        if sLSB is None:
+            sLSB = -1
+        if f1 is None:
+            f1 = -1
+        if f2 is None:
+            f2 = -1
+        if f3 is None:
+            f3 = -1
+        if f4 is None:
+            f4 = -1
+        if f5 is None:
+            f5 = -1
+        if not (clockMonostable or clockExternal or clockFromFIFO):
+            clockExternal=True
+        clk=0
+        if clockExternal:
+            clk=2
+        elif clockFromFIFO:
+            clk=0
+        if f0 is None:
+            if clockExternal:
+                f0 = 1
+            else:
+                f0 = 0
+        if clockExternal:
+            self.extClock(enable=True)
+        #else:
+            #self.extClock(enable=False)
+
+        #self.adc_reg_new.set_adc_chip(en_gr=enableOffsetCurrent,d=offsetCurrent,tstin=testInput,frqc=freqInternal,slp=sleep,pdsr=pdsr,pcsr=pcsr,clk=clk,f0=f0,f1=f1,f2=f2,f3=f3,f4=f4,f5=f5,slsb=sLSB)
+
+        """
+        % END ADC ASIC CUSTOMIZATION
+        """
         if (to_print == True):
             print ("configAdcAsicNew -> Config ADC ASIC SPI")
         for k in range(10):            
@@ -704,8 +687,53 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
                 if (to_print == True):
                     print("FEMB_CONFIG--> ADC ASIC SPI is OK")
                 break
-            #else:
-                #print ("FEMB_CONFIG--> Try {}, since SPI response was {}".format(k + 2, hex(val)))
+          
+    def extClock(self, enable=True):
+        clock = 1./ self.FPGA_FREQ_MHZ * 1000. # clock now in ns (5*10^(-9))
+        mult = 1
+        denominator = clock/mult
+        cl1 = self.EC_RST_OFF // denominator
+        cl2 = self.EC_RST_WID // denominator
+        cl3 = self.EC_RD_OFF // denominator
+        cl4 = self.EC_RD_WID // denominator
+        cl5 = self.EC_IDXM_OFF // denominator
+        cl6 = self.EC_IDXM_WID // denominator
+        cl7 = self.EC_IDXL_OFF // denominator
+        cl8 = self.EC_IDXL_WID // denominator
+        cl9 = self.EC_IDL1_OFF // denominator
+        cl10 = self.EC_IDL1_WID // denominator
+        cl11 = self.EC_IDL2_OFF // denominator
+        cl12 = self.EC_IDL2_WID // denominator
+        inv=0
+        if self.inv_rst:      #INV_RST
+            inv += 1 << 0
+        if self.inv_read:     #INV_READ
+            inv += 1 << 1
+        if self.inv_idxm:     #INV_IDXM
+            inv += 1 << 2
+        if self.inv_idxl:     #INV_IDXL
+            inv += 1 << 3
+        if self.inv_idl:      #INV_IDL
+            inv += 1 << 4
+        #Coarse Control
+        self.femb_eh.write_reg(21, inv)
+        self.femb_eh.write_reg(14, 0) #set 200MHz adc clock      
+        self.femb_eh.write_reg(22, cl1) # RESET Offset      
+        self.femb_eh.write_reg(23, cl2) # RESET Width
+        self.femb_eh.write_reg(24, cl3) # READ Offset
+        self.femb_eh.write_reg(25, cl4) # READ Width
+        self.femb_eh.write_reg(26, cl5)#self.EC_IDXM_OFF)  # IDXM Offset
+        self.femb_eh.write_reg(27, cl6)#self.EC_IDXM_WID)  # IDXM Width        
+        self.femb_eh.write_reg(28, cl7)#self.EC_IDXL_OFF)  # IDXL Offset
+        self.femb_eh.write_reg(29, cl8)#self.EC_IDXL_WID)  # IDXL Width
+        self.femb_eh.write_reg(30, cl9)#self.EC_IDL1_OFF)  # IDL1 Offset
+        self.femb_eh.write_reg(31, cl10)#self.EC_IDL1_WID)  # IDL1 Width         
+        self.femb_eh.write_reg(32, cl11)#self.EC_IDL2_OFF)  # IDL2 Offset
+        self.femb_eh.write_reg(33, cl12)#self.EC_IDL2_WID)  # IDL2 Width
+        #Fine Control
+        self.femb_eh.write_reg(34, self.EC_PLL_STEP0) # C0 & C1 fine clock settings   
+        self.femb_eh.write_reg(35, self.EC_PLL_STEP1) # C2 & C3 fine clock settings
+        self.femb_eh.write_reg(36, self.EC_PLL_STEP2) # C2 & C3 fine clock settings
 
     def syncADCNew(self,iASIC=None):
         print("\nsyncADCNew - BEGIN\n")
@@ -839,8 +867,6 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
             inv += 1 << 3
         if self.inv_idl:      #INV_IDL
             inv += 1 << 4
-        #if self.inv_clk_dis:  #INV_CLK_DIS
-        #    inv += 1 << 5
 
         clock = 1./ self.FPGA_FREQ_MHZ * 1000. # clock now in ns (5*10^(-9))
         mult = 1
@@ -857,7 +883,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         cl10 = self.EC_IDL1_WID // denominator
         cl11 = self.EC_IDL2_OFF // denominator
         cl12 = self.EC_IDL2_WID // denominator
-
+        """
         print("set RSET CLK OFF: {}".format(cl1))
         print("set RSET CLK WID: {}".format(cl2))
         print("set READ CLK OFF: {}".format(cl3))
@@ -870,14 +896,13 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         print("set IDL1 CLK WID: {}".format(cl10))
         print("set IDL2 CLK OFF: {}".format(cl11))
         print("set IDL2 CLK WID: {}".format(cl12))
-
+        """
         self.femb_eh.write_reg(21, inv)
         self.femb_eh.write_reg(14, 0) #set 200MHz adc clock      
-        #int(val) & 0xFFFF ??
-        self.femb_eh.write_reg(22, cl1)#self.EC_RST_OFF)   # RESET Offset      
-        self.femb_eh.write_reg(23, cl2)#self.EC_RST_WID)   # RESET Width
-        self.femb_eh.write_reg(24, cl3)#self.EC_RD_OFF)    # READ Offset
-        self.femb_eh.write_reg(25, cl4)#self.EC_RD_WID)    # READ Width
+        self.femb_eh.write_reg(22, cl1) # RESET Offset      
+        self.femb_eh.write_reg(23, cl2) # RESET Width
+        self.femb_eh.write_reg(24, cl3) # READ Offset
+        self.femb_eh.write_reg(25, cl4) # READ Width
         self.femb_eh.write_reg(26, cl5)#self.EC_IDXM_OFF)  # IDXM Offset
         self.femb_eh.write_reg(27, cl6)#self.EC_IDXM_WID)  # IDXM Width        
         self.femb_eh.write_reg(28, cl7)#self.EC_IDXL_OFF)  # IDXL Offset
@@ -894,14 +919,10 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         #set default value to FEMB ADCs
         #clk = 2 is external
         #clk = 0 is internal
-        self.adc_reg_new.set_adc_board( d=6, pcsr=1, pdsr=0, slp=0, tstin=1,
+        self.adc_reg_new.set_adc_board(d=6, pcsr=1, pdsr=0, slp=0, tstin=1,
                  clk = 0, frqc = 1, en_gr = 0, f0 = 0, f1 = 0, 
                  f2 = 0, f3 = 0, f4 = 0, f5 = 1, slsb = 0) # set to internal 1/31/18 cp
                  
         self.femb.write_reg( self.REG_ASIC_SPIPROG, 0x30)
         self.femb.write_reg( self.REG_ASIC_SPIPROG, 0)
         self.configAdcAsicNew(False)
-      
-
-
-

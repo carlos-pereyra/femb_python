@@ -501,7 +501,7 @@ class GUI_WINDOW(Frame):
                                 "argstr": "-j {paramfile}",
                                 "basedir": self.data_base_dir,
                                 "rundir": "/home/{linux_username}/run",
-                                "datadir": "{basedir}/{linux_username}/adcasic/{femb_config_name}/{timestamp}",
+                                "datadir": "{basedir}/{linux_username}/adcasic_A01/{femb_config_name}/{timestamp}",
                                 "paramfile": "{datadir}/params.json",
                                 "smtname": "adc",
                                 "smttag": "{hostname}",
