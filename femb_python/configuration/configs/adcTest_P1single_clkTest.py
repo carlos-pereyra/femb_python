@@ -27,7 +27,6 @@ from femb_python.test_measurements.adc_clk_tst.femb_udp_cmdline import FPGA_UDP
 from femb_python.configuration.config_base import FEMB_CONFIG_BASE, FEMBConfigError, SyncADCError, InitBoardError, ConfigADCError, ReadRegError
 from femb_python.configuration.adc_asic_reg_mapping_P1 import ADC_ASIC_REG_MAPPING
 from femb_python.test_measurements.adc_clk_tst.adc_asic_reg_mapping import ADC_ASIC_REG_MAPPING_NEW# fix/update!
-
 from femb_python.test_instrument_interface.keysight_33600A import Keysight_33600A
 from femb_python.test_instrument_interface.rigol_dp800 import RigolDP800
 
@@ -89,16 +88,16 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
 
         self.EC_RST_OFF = 0
         self.EC_RST_WID = 50
-        self.EC_RD_OFF = 470
-        self.EC_RD_WID = 15
-        self.EC_IDXM_OFF = 220
-        self.EC_IDXM_WID = 265 #270
-        self.EC_IDXL_OFF = 470
-        self.EC_IDXL_WID = 15
-        self.EC_IDL1_OFF = 35 #40
-        self.EC_IDL1_WID = 185
-        self.EC_IDL2_OFF = 465
-        self.EC_IDL2_WID = 15
+        self.EC_RD_OFF = 480
+        self.EC_RD_WID = 20
+        self.EC_IDXM_OFF = 230
+        self.EC_IDXM_WID = 270 #270
+        self.EC_IDXL_OFF = 480
+        self.EC_IDXL_WID = 20
+        self.EC_IDL1_OFF = 50 #40
+        self.EC_IDL1_WID = 190
+        self.EC_IDL2_OFF = 480
+        self.EC_IDL2_WID = 20
         self.EC_PLL_STEP0 =  0x0014000D #0x000b000f # found in labview
         self.EC_PLL_STEP1 =  0x00060012 #0x000e0008 # found in labview
         self.EC_PLL_STEP2 =  0x80190009 # found in labview
@@ -536,7 +535,7 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         # f3     # 0 IDL delayed 5-10 ns, 1 IDL delay one clk cycle
         # f4     # 
         # f5     # 0 adc data, 1 test data
-        self.adc_reg_new.set_adc_chip(chip = a, d = 6, pcsr=1, pdsr=0, slp=0, tstin=1, clk = 2, frqc = 1, f4 = 0, f5 = 0)
+        self.adc_reg_new.set_adc_chip(chip = a, d = 6, pcsr=1, pdsr=0, slp=0, tstin=1, clk = 2, frqc = 1, f0 = 0, f4 = 0, f5 = 0)
         self.configAdcAsicNew(True)
 
 
@@ -635,6 +634,8 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         #else:
             #self.extClock(enable=False)
 
+        #self.adc_reg_new.set_adc_chip(chip = 0, d = 6, pcsr=1, pdsr=0, slp=0, tstin=1, clk = clk, frqc = 1, f4 = 0, f5 = 0)
+
         #self.adc_reg_new.set_adc_chip(en_gr=enableOffsetCurrent,d=offsetCurrent,tstin=testInput,frqc=freqInternal,slp=sleep,pdsr=pdsr,pcsr=pcsr,clk=clk,f0=f0,f1=f1,f2=f2,f3=f3,f4=f4,f5=f5,slsb=sLSB)
 
         """
@@ -689,6 +690,8 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
                 break
           
     def extClock(self, enable=True):
+        self.femb_eh.write_reg(14, 0) #set 200MHz adc clock      
+
         clock = 1./ self.FPGA_FREQ_MHZ * 1000. # clock now in ns (5*10^(-9))
         mult = 1
         denominator = clock/mult
@@ -717,7 +720,6 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
             inv += 1 << 4
         #Coarse Control
         self.femb_eh.write_reg(21, inv)
-        self.femb_eh.write_reg(14, 0) #set 200MHz adc clock      
         self.femb_eh.write_reg(22, cl1) # RESET Offset      
         self.femb_eh.write_reg(23, cl2) # RESET Width
         self.femb_eh.write_reg(24, cl3) # READ Offset
@@ -768,37 +770,6 @@ class FEMB_CONFIG(FEMB_CONFIG_BASE):
         print ("FEMB_CONFIG--> Final Latch latency " + str(hex(latchloc1_4)))
         print ("FEMB_CONFIG--> Final Phase Shift " +   str(hex(clkphase)))
         print ("FEMB_CONFIG--> ADC passed Sync Test!")
-        clock = 1./self.FPGA_FREQ_MHZ * 1000. # clock now in ns
-        mult = 1
-        denominator = clock/mult
-        cl1 = self.EC_RST_OFF // denominator
-        cl2 = self.EC_RST_WID // denominator
-        cl3 = self.EC_RD_OFF // denominator
-        cl4 = self.EC_RD_WID // denominator
-        cl5 = self.EC_IDXM_OFF // denominator
-        cl6 = self.EC_IDXM_WID // denominator
-        cl7 = self.EC_IDXL_OFF // denominator
-        cl8 = self.EC_IDXL_WID // denominator
-        cl9 = self.EC_IDL1_OFF // denominator
-        cl10 = self.EC_IDL1_WID // denominator
-        cl11 = self.EC_IDL2_OFF // denominator
-        cl12 = self.EC_IDL2_WID // denominator
-        print("INV CLK: {}".format(self.femb_eh.read_reg(21)))
-        print("RSET CLK OFF: {} v {}".format(self.femb_eh.read_reg(22), cl1))
-        print("RSET CLK WID: {} v {}".format(self.femb_eh.read_reg(23), cl2))
-        print("READ CLK OFF: {} v {}".format(self.femb_eh.read_reg(24), cl3))
-        print("READ CLK WID: {} v {}".format(self.femb_eh.read_reg(25), cl4))
-        print("IDXM CLK OFF : {} v {}".format(self.femb_eh.read_reg(26), cl5))
-        print("IDXM CLK WID: {} v {}".format(self.femb_eh.read_reg(27), cl6))
-        print("IDXL CLK OFF: {} v {}".format(self.femb_eh.read_reg(28), cl7))
-        print("IDXL CLK WID: {} v {}".format(self.femb_eh.read_reg(29), cl8))
-        print("IDL1 CLK OFF: {} v {}".format(self.femb_eh.read_reg(30), cl9))
-        print("IDL1 CLK WID: {} v {}".format(self.femb_eh.read_reg(31), cl10))
-        print("IDL2 CLK OFF: {} v {}".format(self.femb_eh.read_reg(32), cl11))
-        print("IDL2 CLK WID: {} v {}".format(self.femb_eh.read_reg(33), cl12))
-        print("STEP0: {}".format(self.femb_eh.read_reg(34)))
-        print("STEP1: {}".format(self.femb_eh.read_reg(35)))
-        print("STEP2: {}".format(self.femb_eh.read_reg(36)))
 
         return not alreadySynced,latchloc1_4,clkphase 
 
