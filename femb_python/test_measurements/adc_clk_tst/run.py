@@ -94,7 +94,7 @@ def configAdcAsic(config,sampleRate,offsetCurrent=None,
             sys.stdout.flush()
             sys.stderr.flush()
             try:
-                config.configAdcAsic(enableOffsetCurrent=enableOffsetCurrent,offsetCurrent=offsetCurrent,
+                config.reConfigAdcAsicNew(enableOffsetCurrent=enableOffsetCurrent,offsetCurrent=offsetCurrent,
                             clockMonostable=clockMonostable,clockFromFIFO=clockFromFIFO,
                             clockExternal=clockExternal,testInput=testInput)
             except FEMBConfigError as e:
@@ -209,18 +209,26 @@ def runTests(config,dataDir,adcSerialNumbers,startDateTime,operator,board_id,hos
                         sys.stderr.write("Error collecting data for sample rate: {} clock: {} offset: {} chip: {} Error: {} {}\n".format(sampleRate, clock, offset, iChip,type(e),e))
                         traceback.print_tb(e.__traceback__)
                         continue
+
+
                     print("Processing...")
+                    print("fileprefix: {}".format(fileprefix))
                     static_fns = list(glob.glob(fileprefix+"_functype3_freq734.*.root"))
+                    print(static_fns)
                     assert(len(static_fns)==1)
                     static_fn = static_fns[0]
                     dc_fns = list(glob.glob(fileprefix+"_functype1_*.root"))
                     try:
+                        print("\nStatic Fn: {}\n".format(static_fn))
                         CALIBRATE_RAMP(static_fn,sampleRate).write_calibrate_tree()
                     except Exception as e:
                         isError[adcSerialNumbers[iChip]] = True
                         print("Error while calibrating ramp, traceback in stderr.")
                         sys.stderr.write("Error calibrating ramp for sample rate: {} clock: {} offset: {} chip: {} Error: {} {}\n".format(sampleRate, clock, offset, iChip,type(e),e))
                         traceback.print_tb(e.__traceback__)
+
+
+
                     try:
                         staticStats = static_tests.analyzeLinearity(static_fn,diagnosticPlots=False)
                         chipStats["static"] = staticStats
@@ -229,14 +237,7 @@ def runTests(config,dataDir,adcSerialNumbers,startDateTime,operator,board_id,hos
                         print("Error while performing static tests, traceback in stderr.")
                         sys.stderr.write("Error in static tests for sample rate: {} clock: {} offset: {} chip: {}  Error: {} {}\n".format(sampleRate, clock, offset, iChip,type(e),e))
                         traceback.print_tb(e.__traceback__)
-                    try:
-                        dynamicStats = dynamic_tests.analyze(fileprefix,diagnosticPlots=False)
-                        chipStats["dynamic"] = dynamicStats
-                    except Exception as e:
-                        isError[adcSerialNumbers[iChip]] = True
-                        print("Error while performing dynamic tests, traceback in stderr.")
-                        sys.stderr.write("Error in dynamic tests for sample rate: {} clock: {} offset: {} chip: {}  Error: {} {}\n".format(sampleRate, clock, offset, iChip,type(e),e))
-                        traceback.print_tb(e.__traceback__)
+
                     try:
                         dcStats = dc_tests.analyze(dc_fns,verbose=False)
                         chipStats["dc"] = dcStats
@@ -245,6 +246,16 @@ def runTests(config,dataDir,adcSerialNumbers,startDateTime,operator,board_id,hos
                         print("Error while performing dc tests, traceback in stderr.")
                         sys.stderr.write("Error in dc tests for sample rate: {} clock: {} offset: {} chip: {} Error: {} {}\n".format(sampleRate, clock, offset, iChip,type(e),e))
                         traceback.print_tb(e.__traceback__)
+
+                    try:
+                        dynamicStats = dynamic_tests.analyze(fileprefix,diagnosticPlots=False)
+                        chipStats["dynamic"] = dynamicStats
+                    except Exception as e:
+                        isError[adcSerialNumbers[iChip]] = True
+                        print("Error while performing dynamic tests, traceback in stderr.")
+                        sys.stderr.write("Error in dynamic tests for sample rate: {} clock: {} offset: {} chip: {}  Error: {} {}\n".format(sampleRate, clock, offset, iChip,type(e),e))
+                        traceback.print_tb(e.__traceback__)
+
                     configStats[adcSerialNumbers[iChip]] = chipStats
                     #with open(fileprefix+"_statsRaw.json","w") as f:
                     #    json.dump(chipStats,f)

@@ -26,39 +26,51 @@ class CALIBRATE_RAMP(object):
         self.samplingFreq = samplingFreq
 
     def write_calibrate_tree(self):
+        print("WRITE CAL infilename: {}".format(self.infilename))
         f = ROOT.TFile(self.infilename)
-
         metadataTree = f.Get("metadata")
+        if( metadataTree == False ):
+            print("Error opening metatree, exiting")
+            sys.exit(1);
         metadataTree.GetEntry(0)
         funcType = metadataTree.funcType
+        print("funcType: {}".format(funcType))
         frequency = metadataTree.funcFreq
+        print("frequency: {}".format(frequency))
         offset = metadataTree.funcOffset
+        print("offset: {}".format(offset))
         amplitude = metadataTree.funcAmp
+        print("amplitude: {}".format(amplitude))
         if funcType != 3:
             print("Calibration error: file not ramp data",file=sys.stderr)
             sys.exit(1)
         intree = f.Get("femb_wfdata")
-        #print("Creating file: ",self.outfilename,file=sys.stderr)
+        if( intree == False ):
+            print("Error opening intree, exiting")
+            sys.exit(1);
+        print(self.outfilename)
         fout = ROOT.TFile( self.outfilename, 'recreate' )
+        #print("Creating file: {} - {}".format(self.outfilename,file=sys.stderr))
         fout.cd()
         outmetadataTree = metadataTree.CloneTree()
         outtree = intree.CloneTree()
-
         wfBranch = outtree.GetBranch("wf")
         voltage = ROOT.std.vector( float )()
         voltageBranch = outtree.Branch( 'voltage', voltage )
-
         calibrationTree = ROOT.TTree("calibration","calibration information")
         voltsPerADCArray = array.array('d',[0.])
         voltsInterceptArray = array.array('d',[0.])
         calibrationTree.Branch( 'voltsPerADC', voltsPerADCArray, 'voltsPerADC/D')
         calibrationTree.Branch( 'voltsIntercept', voltsInterceptArray, 'voltsIntercept/D')
-
         for iEntry in range(outtree.GetEntries()):
             outtree.GetEntry(iEntry)
             waveform = numpy.array(list(outtree.wf))
-            #print("Channel: ",outtree.chan)
+            print("Calibrate Ramp: WRITE_CALIBRATE_TREE")
+            print("write_calibrate_tree wf: {}".format(waveform))
+            print("write_calibrate_tree wf len {}".format(len(waveform)))
+            print("write_calibrate_tree wf chan {}".format(outtree.chan))
             voltage.resize(len(waveform))
+            print("voltage before do calibration: {}".format(voltage))
             slope, intercept = self.doCalibration(waveform,voltage,frequency,offset,amplitude)
             voltageBranch.Fill()
             voltsPerADCArray[0] = slope
@@ -72,21 +84,26 @@ class CALIBRATE_RAMP(object):
         nSamplesPeriod = self.samplingFreq/freq
         iFirstPeak = None
         firstMax = numpy.max(waveform[int(0.5*nSamplesPeriod):min(int(1.7*nSamplesPeriod),len(waveform)-1)])
+        print("firstmax")
+        print(firstMax)
         maxCodeV = None
         for iSample in range(int(0.5*nSamplesPeriod),min(int(1.7*nSamplesPeriod),len(waveform)-1)):
             if not (iFirstPeak is None):
+                print("first peak is none")
                 break
             if waveform[iSample] >= firstMax and waveform[iSample+1] < firstMax:
+                print("6")
                 for jSample in range(iSample,-1,-1):
                     if waveform[jSample-1] < firstMax:
                         iFirstPeak = 0.5*(iSample + jSample)
                         maxCodeV = funcOffset+funcAmp-(iSample-jSample)/nSamplesPeriod*funcAmp*2
                         break
         if iFirstPeak is None:
+            print("couldnt find first peak")
             raise RuntimeError("Could not find first peak in waveform.")
         maxCodes = []
         iPeaks = []
-        #print("iFirstPeak:",iFirstPeak)
+        print("iFirstPeak:",iFirstPeak)
         for iTryPeak in range(int(math.ceil(iFirstPeak)),len(waveform),int(math.floor(nSamplesPeriod))):
             iStartLook = int(iTryPeak - 0.3*nSamplesPeriod)
             iStopLook = int(iTryPeak + 0.3*nSamplesPeriod)
@@ -121,8 +138,12 @@ class CALIBRATE_RAMP(object):
             yintercept = - slope * xintercept
             voltage[iSample] = slope*iShiftedSample + yintercept + funcOffset
             #print(iSample,iShiftedSample,waveform[iSample],voltage[iSample],xintercept,yintercept)
-
         voltages = numpy.array(voltage)
+        print("do CALIBRATION INFO")
+        print("voltages {}".format(voltages))
+        print("len voltages {}".format(len(voltages)))
+        print("waveform {}".format(waveform))
+        print("len waveform {}".format(len(waveform)))
         goodOnes = voltages > 0.2
         goodOnes = numpy.logical_and(voltages < 1.2, goodOnes)
         goodOnes = numpy.logical_and(waveform > 400, goodOnes)
@@ -132,16 +153,17 @@ class CALIBRATE_RAMP(object):
         goodOnes = numpy.logical_and(waveformLast6Bits != 0,goodOnes)
         voltages = voltages[goodOnes]
         samples = waveform[goodOnes]
+
         A = numpy.vstack([samples, numpy.ones(len(samples))]).T
         parameters, residuals, rank, s = numpy.linalg.lstsq(A,voltages)
 
-        #from matplotlib import pyplot as plt
-        #fig, ax = plt.subplots()
-        #ax.plot(waveform)
-        #ax.plot(numpy.array(list(voltage))/parameters[0]-parameters[1]/parameters[0])
-        #axRight = ax.twinx()
-        #axRight.set_ylim(numpy.array(ax.get_ylim())*parameters[0]+parameters[1])
-        #plt.show()
+        from matplotlib import pyplot as plt
+        fig, ax = plt.subplots()
+        ax.plot(waveform)
+        ax.plot(numpy.array(list(voltage))/parameters[0]-parameters[1]/parameters[0])
+        axRight = ax.twinx()
+        axRight.set_ylim(numpy.array(ax.get_ylim())*parameters[0]+parameters[1])
+        plt.show()
 
         return parameters[0], parameters[1]
         

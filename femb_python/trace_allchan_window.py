@@ -180,7 +180,7 @@ class TRACE_ALLCHAN_WINDOW(Tk.Frame):
     timestamp = None
     if iTrace is None:
         #data = self.femb.get_data(num = 100)
-        data = self.femb_eh.get_data_packets(data_type = "int", num = 100, header = False)
+        data = self.femb_eh.get_data_packets(data_type = "int", num = 20, header = False)
         timestamp = datetime.datetime.now()
         self.traces.append(data)
         self.timestamps.append(timestamp)

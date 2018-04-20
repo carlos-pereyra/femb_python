@@ -150,7 +150,7 @@ class FPGA_UDP:
     #Read and return a given amount of unpacked data "packets"
     #If you're going to save it write to disk, request it as "bin"
     #If you're going to use it in Python for something else, request the int or hex
-    def get_data_packets(self, data_type, num=1, header = False):
+    def get_data_packets(self, data_type = 'int', num=1, header = False):
         numVal = int(num)
         if (numVal < 0) or (numVal > self.MAX_NUM_PACKETS):
                 print ("FEMB_UDP--> Error: Invalid number of data packets requested")
